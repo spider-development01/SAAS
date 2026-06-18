@@ -1,0 +1,2007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0" />
+<meta name="theme-color" content="#F2F4F8" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>IronCore · Member Portal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — Light Glassmorphism / Apple Liquid Glass
+   ============================================================ */
+:root {
+  /* Surfaces */
+  --bg-base: #F2F4F8;
+  --bg-gradient-1: #E8ECF4;
+  --bg-gradient-2: #F7F8FC;
+  --orb-1: rgba(108, 99, 255, 0.18);
+  --orb-2: rgba(0, 122, 255, 0.12);
+  --orb-3: rgba(255, 90, 159, 0.10);
+
+  /* Glass surfaces */
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-strong: rgba(255, 255, 255, 0.86);
+  --glass-bg-soft: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-soft: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+  --glass-shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
+  --glass-blur: 24px;
+
+  /* Accent */
+  --accent: #6C63FF;
+  --accent-2: #8B7CFF;
+  --accent-glow: rgba(108, 99, 255, 0.25);
+  --apple-blue: #007AFF;
+
+  /* Status */
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+
+  /* Text */
+  --text-1: #0F172A;
+  --text-2: #475569;
+  --text-3: #94A3B8;
+  --text-4: #CBD5E1;
+
+  /* Misc */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+
+  /* Easing */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', system-ui, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--text-1);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-base);
+  overflow-x: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Animated gradient orbs in background */
+body::before, body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  will-change: transform;
+}
+body::before {
+  width: 480px; height: 480px;
+  background: var(--orb-1);
+  top: -120px; left: -100px;
+  animation: float1 20s ease-in-out infinite;
+}
+body::after {
+  width: 420px; height: 420px;
+  background: var(--orb-2);
+  bottom: -100px; right: -80px;
+  animation: float2 25s ease-in-out infinite;
+}
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(60px, 80px) scale(1.1); }
+}
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-80px, -60px) scale(0.9); }
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+img { max-width: 100%; display: block; }
+input, textarea, select { width: 100%; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(15,23,42,0.3); }
+
+/* ============================================================
+   GLASS COMPONENTS
+   ============================================================ */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow);
+}
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(180%);
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) + 4px)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 22px;
+  box-shadow: var(--glass-shadow);
+  transition: transform .3s var(--ease-spring), box-shadow .3s var(--ease-spring);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glass-shadow-lg);
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 600;
+  background: rgba(148, 163, 184, 0.15); color: var(--text-2);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+.badge.active   { background: rgba(34,197,94,0.15); color: #15803D; border-color: rgba(34,197,94,0.3); }
+.badge.expiring { background: rgba(245,158,11,0.15); color: #B45309; border-color: rgba(245,158,11,0.3); }
+.badge.expired  { background: rgba(239,68,68,0.15); color: #B91C1C; border-color: rgba(239,68,68,0.3); }
+.badge.unpaid   { background: rgba(239,68,68,0.15); color: #B91C1C; border-color: rgba(239,68,68,0.3); }
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 12px 18px; border-radius: var(--radius-sm);
+  font-weight: 600; font-size: 14px;
+  transition: all .25s var(--ease-spring);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  min-height: 44px;
+  position: relative;
+  overflow: hidden;
+}
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.btn-primary:hover:not(:disabled) { box-shadow: 0 8px 22px var(--accent-glow); transform: translateY(-1px); }
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: var(--text-1);
+  border-color: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+.btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.9); border-color: var(--accent); color: var(--accent); }
+.btn-ghost { color: var(--text-2); }
+.btn-ghost:hover { color: var(--text-1); background: rgba(15, 23, 42, 0.06); }
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+.btn-danger:hover:not(:disabled) { background: var(--danger); color: white; }
+.btn-lg { padding: 16px 24px; font-size: 16px; min-height: 52px; border-radius: var(--radius-md); }
+.btn-block { width: 100%; }
+
+.input, .select, textarea {
+  width: 100%; padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: var(--radius-sm);
+  color: var(--text-1); font-size: 16px;
+  transition: all .25s var(--ease-out);
+  min-height: 48px;
+}
+.input:focus, .select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+.input::placeholder, textarea::placeholder { color: var(--text-3); }
+label.field { display: block; margin-bottom: 14px; }
+label.field > span { display: block; margin-bottom: 6px; color: var(--text-2); font-size: 13px; font-weight: 500; }
+
+.avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white; font-weight: 700;
+  overflow: hidden; flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.95) 50%, rgba(255,255,255,0.5) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.stat-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--glass-shadow);
+  position: relative;
+  overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  opacity: 0; transition: opacity .3s ease;
+}
+.stat-card:hover::before { opacity: 1; }
+.stat-card .label { color: var(--text-3); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.stat-card .value { font-size: 28px; font-weight: 700; margin-top: 4px; color: var(--text-1); }
+.stat-card .trend { font-size: 12px; margin-top: 2px; color: var(--text-3); }
+.stat-card .trend.up { color: var(--success); }
+.stat-card .trend.down { color: var(--danger); }
+
+/* ============================================================
+   TOASTS — top center on mobile, top-right on desktop
+   ============================================================ */
+.toast-container {
+  position: fixed; top: calc(16px + var(--safe-top)); right: 16px; z-index: 9999;
+  display: flex; flex-direction: column; gap: 10px;
+  max-width: calc(100vw - 32px);
+  pointer-events: none;
+}
+.toast {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px; min-width: 280px;
+  box-shadow: var(--glass-shadow-lg);
+  animation: slideInRight .35s var(--ease-spring);
+  display: flex; gap: 10px; align-items: flex-start;
+  pointer-events: auto;
+}
+.toast.success { border-left-color: var(--success); }
+.toast.error   { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--warning); }
+.toast .icon { flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+.toast.success .icon { color: var(--success); }
+.toast.error .icon { color: var(--danger); }
+.toast.warning .icon { color: var(--warning); }
+.toast .msg { font-size: 14px; color: var(--text-1); }
+.toast .title { font-weight: 600; margin-bottom: 2px; color: var(--text-1); }
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOutRight { to { transform: translateX(120%); opacity: 0; } }
+
+/* ============================================================
+   MODALS — Apple-style sheet on mobile, centered on desktop
+   ============================================================ */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 1000; padding: 0;
+  animation: fadeIn .25s ease;
+}
+.modal {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  width: 100%; max-width: 100%; max-height: 92vh;
+  overflow-y: auto;
+  padding: 24px 20px calc(24px + var(--safe-bottom));
+  animation: slideUp .35s var(--ease-spring);
+  box-shadow: 0 -20px 60px rgba(15, 23, 42, 0.15);
+}
+.modal::before {
+  content: ''; display: block;
+  width: 40px; height: 4px; border-radius: 2px;
+  background: rgba(15, 23, 42, 0.15);
+  margin: 0 auto 18px;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+.spinner-dark {
+  border-color: rgba(15,23,42,0.2);
+  border-top-color: var(--accent);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   AUTH SCREEN
+   ============================================================ */
+.auth-wrap {
+  min-height: 100vh; min-height: 100dvh;
+  display: grid; place-items: center; padding: 20px;
+  padding-top: calc(20px + var(--safe-top));
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+.auth-card {
+  width: 100%; max-width: 400px;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  padding: 32px 28px;
+  box-shadow: var(--glass-shadow-lg);
+  animation: authIn .5s var(--ease-spring);
+}
+@keyframes authIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.auth-logo {
+  width: 56px; height: 56px; border-radius: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center; margin-bottom: 20px;
+  box-shadow: 0 12px 28px var(--accent-glow);
+  color: white; font-weight: 800; font-size: 22px;
+}
+.auth-title { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.auth-subtitle { color: var(--text-2); font-size: 14px; margin-top: 4px; margin-bottom: 24px; }
+.auth-tabs {
+  display: flex; gap: 4px; padding: 4px;
+  background: rgba(15, 23, 42, 0.06);
+  border-radius: var(--radius-sm); margin-bottom: 18px;
+}
+.auth-tab {
+  flex: 1; padding: 10px; border-radius: 8px;
+  color: var(--text-2); font-weight: 600; font-size: 13px;
+  transition: all .25s var(--ease-spring);
+  border: none; background: none; cursor: pointer;
+}
+.auth-tab.active {
+  background: white; color: var(--text-1);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  color: var(--text-3); font-size: 12px; margin: 16px 0;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: rgba(15, 23, 42, 0.1);
+}
+
+/* ============================================================
+   APP LAYOUT
+   ============================================================ */
+.app { min-height: 100vh; min-height: 100dvh; }
+
+/* Top bar — sticky glass */
+.topbar {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--glass-border-soft);
+  padding: calc(12px + var(--safe-top)) 16px 12px;
+  display: flex; align-items: center; gap: 12px;
+}
+.topbar .logo {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center;
+  color: white; font-weight: 800; font-size: 14px;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+.topbar .gym-name { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+.topbar .gym-sub { font-size: 11px; color: var(--text-3); margin-top: -1px; }
+.topbar .spacer { flex: 1; }
+.topbar .icon-btn {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border-soft);
+  transition: all .2s var(--ease-spring);
+}
+.topbar .icon-btn:hover, .topbar .icon-btn:active {
+  color: var(--accent); background: rgba(255,255,255,0.9);
+  transform: scale(0.95);
+}
+
+/* Desktop sidebar */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: 248px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-right: 1px solid var(--glass-border-soft);
+  padding: calc(24px + var(--safe-top)) 16px 24px;
+  display: flex; flex-direction: column;
+  z-index: 60;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px 24px; font-weight: 800; font-size: 17px; letter-spacing: -0.01em;
+}
+.sidebar-logo .logo-mark {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center;
+  color: white; font-weight: 800;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+.nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  color: var(--text-2); font-weight: 600; font-size: 14px;
+  transition: all .2s var(--ease-spring);
+  border: none; background: none; width: 100%; text-align: left;
+  cursor: pointer; min-height: 44px;
+}
+.nav-item:hover { background: rgba(15, 23, 42, 0.05); color: var(--text-1); }
+.nav-item.active {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white;
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+.nav-item.active svg { color: white; }
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; color: var(--text-3); }
+.nav-item.active svg { color: white; }
+.nav-section {
+  color: var(--text-3); font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em;
+  padding: 16px 14px 6px;
+}
+
+.main-desktop { margin-left: 248px; padding: 24px 32px calc(120px + var(--safe-bottom)); max-width: 1280px; }
+.main-mobile { padding: 16px 14px calc(110px + var(--safe-bottom)); }
+
+/* Page header */
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; gap: 16px; flex-wrap: wrap; }
+.page-title { font-size: clamp(22px, 5vw, 28px); font-weight: 800; letter-spacing: -0.02em; }
+.page-subtitle { color: var(--text-2); font-size: 13px; margin-top: 2px; }
+
+/* Sections */
+.section { display: none; animation: sectionIn .35s var(--ease-spring); }
+.section.active { display: block; }
+@keyframes sectionIn { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* Grids */
+.grid { display: grid; gap: 14px; }
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+/* Exercise & meal items */
+.exercise-item, .meal-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border-soft);
+  border-radius: var(--radius-md);
+  margin-bottom: 8px;
+  transition: all .2s var(--ease-spring);
+}
+.exercise-item:hover, .meal-item:hover { background: rgba(255,255,255,0.8); transform: translateX(2px); }
+.exercise-item .num {
+  width: 32px; height: 32px; border-radius: 10px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: white; display: grid; place-items: center;
+  font-size: 13px; font-weight: 700;
+  box-shadow: 0 4px 10px var(--accent-glow);
+  flex-shrink: 0;
+}
+.exercise-item .name, .meal-item .name { font-weight: 600; color: var(--text-1); }
+.exercise-item .meta, .meal-item .meta { color: var(--text-2); font-size: 12px; margin-top: 2px; }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-3);
+}
+.empty-state svg { width: 48px; height: 48px; margin: 0 auto 12px; opacity: .4; }
+.empty-state .title { font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
+.empty-state .desc { font-size: 13px; }
+
+/* Calendar heatmap */
+.heatmap {
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;
+}
+.heatmap .day {
+  aspect-ratio: 1; border-radius: 6px;
+  background: rgba(15, 23, 42, 0.06);
+  position: relative;
+  transition: transform .15s var(--ease-spring);
+}
+.heatmap .day.has {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+.heatmap .day.today { outline: 2px solid var(--accent); outline-offset: 1px; }
+.heatmap .day .lbl {
+  position: absolute; bottom: 3px; right: 4px;
+  font-size: 10px; color: var(--text-3); font-weight: 600;
+}
+.heatmap .day.has .lbl { color: rgba(255,255,255,0.9); }
+
+/* Quick check-in banner */
+.checkin-banner {
+  background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(0,122,255,0.08));
+  border: 1px solid rgba(108,99,255,0.2);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all .25s var(--ease-spring);
+}
+.checkin-banner:hover { transform: translateY(-1px); box-shadow: var(--glass-shadow); }
+.checkin-banner .icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: grid; place-items: center; color: white; flex-shrink: 0;
+  box-shadow: 0 4px 12px var(--accent-glow);
+}
+.checkin-banner .text { flex: 1; }
+.checkin-banner .title { font-weight: 700; font-size: 15px; }
+.checkin-banner .sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+
+/* Mobile bottom nav */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-top: 1px solid var(--glass-border-soft);
+  padding: 8px 8px calc(8px + var(--safe-bottom));
+  display: flex; justify-content: space-around;
+  z-index: 100;
+}
+.bottom-nav button {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 6px 12px; color: var(--text-3); font-size: 10px; font-weight: 600;
+  border: none; background: none; cursor: pointer;
+  min-height: 44px; min-width: 44px;
+  border-radius: 12px;
+  transition: all .2s var(--ease-spring);
+}
+.bottom-nav button.active { color: var(--accent); }
+.bottom-nav button:active { transform: scale(0.92); }
+.bottom-nav button svg { width: 22px; height: 22px; }
+
+/* Responsive */
+@media (min-width: 1024px) {
+  .bottom-nav { display: none; }
+  .topbar { display: none; }
+}
+@media (max-width: 1023px) {
+  .sidebar { display: none; }
+  .main-desktop { margin-left: 0; padding: 0; }
+}
+@media (max-width: 768px) {
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .grid-2.split { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .auth-card { padding: 24px 20px; }
+  .card { padding: 18px; }
+  .stat-card { padding: 16px; }
+  .stat-card .value { font-size: 24px; }
+}
+
+/* Utility */
+.hidden { display: none !important; }
+.text-2 { color: var(--text-2); }
+.text-3 { color: var(--text-3); }
+.mt-1 { margin-top: 8px; } .mt-2 { margin-top: 16px; } .mt-3 { margin-top: 24px; }
+.mb-1 { margin-bottom: 8px; } .mb-2 { margin-bottom: 16px; } .mb-3 { margin-bottom: 24px; }
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-1 { gap: 8px; } .gap-2 { gap: 16px; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.text-center { text-align: center; }
+.font-mono { font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.whitespace-nowrap { white-space: nowrap; }
+
+/* QR scanner */
+#qrReader {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin: 12px 0;
+  border: 1px solid var(--glass-border-soft);
+}
+#qrReader video { border-radius: var(--radius-md); }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toasts"></div>
+
+<!-- ============================================================
+     AUTH SCREEN
+     ============================================================ -->
+<div class="auth-wrap" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">IC</div>
+    <div class="auth-title">Welcome back</div>
+    <div class="auth-subtitle">Sign in to access your membership, workouts, and progress.</div>
+
+    <div class="auth-tabs" id="authTabs">
+      <button class="auth-tab active" data-mode="email">Email</button>
+      <button class="auth-tab" data-mode="phone">Phone</button>
+    </div>
+
+    <form id="authForm">
+      <div id="emailField">
+        <label class="field">
+          <span>Email address</span>
+          <input type="email" id="authEmail" class="input" placeholder="you@example.com" autocomplete="email" required />
+        </label>
+      </div>
+      <div id="phoneField" class="hidden">
+        <label class="field">
+          <span>Phone number</span>
+          <input type="tel" id="authPhone" class="input" placeholder="+1 555 000 1234" autocomplete="tel" />
+        </label>
+      </div>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" id="authPassword" class="input" placeholder="••••••••" autocomplete="current-password" required />
+      </label>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="authSubmit">
+        <span class="btn-label">Sign In</span>
+      </button>
+    </form>
+
+    <p class="text-3" style="font-size:11px;text-align:center;margin-top:18px;">
+      Enter your email or phone + password to sign in instantly.
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================
+     MAIN APP
+     ============================================================ -->
+<div class="app hidden" id="app">
+
+  <!-- DESKTOP SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">IC</div>
+      <span id="gymNameSide">IronCore</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Membership</div>
+      <button class="nav-item active" data-section="home">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Home
+      </button>
+      <button class="nav-item" data-section="membership">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        My Membership
+      </button>
+      <button class="nav-item" data-section="workout">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        Today's Workout
+      </button>
+      <button class="nav-item" data-section="diet">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+        Diet Plan
+      </button>
+      <div class="nav-section">Health</div>
+      <button class="nav-item" data-section="calories">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.24 17 7.7c.343.91.849 1.792 1.657 2.657A8 8 0 0117.657 18.657z"/></svg>
+        Calorie Log
+      </button>
+      <div class="nav-section">Activity</div>
+      <button class="nav-item" data-section="attendance">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        Attendance
+      </button>
+      <button class="nav-item" data-section="announcements">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+        Announcements
+        <span class="badge" id="annBadge" style="margin-left:auto;background:var(--accent);color:white;display:none;border:none;"></span>
+      </button>
+    </nav>
+    <div style="border-top: 1px solid var(--glass-border-soft); padding-top: 12px; margin-top: 12px; display: flex; align-items: center; gap: 10px;">
+      <div class="avatar" id="userAvatarSide" style="width:36px;height:36px;font-size:13px;"></div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="userNameSide">—</div>
+        <div style="font-size:11px;color:var(--text-3);">Member</div>
+      </div>
+      <button id="logoutBtnSide" title="Sign out" aria-label="Sign out" style="padding:6px;border-radius:8px;color:var(--text-3);width:36px;height:36px;display:grid;place-items:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MOBILE TOPBAR -->
+  <header class="topbar" id="topbar">
+    <div class="logo">IC</div>
+    <div>
+      <div class="gym-name" id="gymNameTop">IronCore</div>
+      <div class="gym-sub">Member Portal</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="logoutBtnTop" aria-label="Sign out">
+      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+    </button>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main id="mainContent">
+    <div class="main-desktop" id="mainArea">
+
+      <!-- ============== HOME / OVERVIEW ============== -->
+      <section class="section active" id="section-home">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Hi, <span id="homeFirstName">—</span> 👋</div>
+            <div class="page-subtitle" id="homeDate"></div>
+          </div>
+        </div>
+
+        <!-- Quick check-in banner -->
+        <div class="checkin-banner" id="checkinBanner">
+          <div class="icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="text">
+            <div class="title">Check in to your session</div>
+            <div class="sub">At the gym? Tap to scan the front desk QR</div>
+          </div>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--text-3);"><path d="M9 5l7 7-7 7"/></svg>
+        </div>
+
+        <div class="grid grid-3 mb-2">
+          <div class="stat-card" id="statStatus">
+            <div class="label">Status</div>
+            <div style="margin-top:6px;"><span class="badge">—</span></div>
+          </div>
+          <div class="stat-card" id="statExpiry">
+            <div class="label">Expires</div>
+            <div class="value" style="font-size:22px;">—</div>
+            <div class="trend" id="statExpiryTrend"></div>
+          </div>
+          <div class="stat-card" id="statVisits">
+            <div class="label">Visits this month</div>
+            <div class="value">—</div>
+            <div class="trend">Total: <span id="statVisitsTotal">0</span></div>
+          </div>
+        </div>
+
+        <div class="grid grid-2 split">
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Today's Workout</div>
+            <div id="homeWorkout"><div class="skeleton" style="height:80px;"></div></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Today's Calories</div>
+            <div id="homeCalories"><div class="skeleton" style="height:80px;"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== MEMBERSHIP ============== -->
+      <section class="section" id="section-membership">
+        <div class="page-header">
+          <div>
+            <div class="page-title">My Membership</div>
+            <div class="page-subtitle" id="todayDate"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-3 mb-2">
+          <div class="stat-card" id="mStatStatus">
+            <div class="label">Status</div>
+            <div style="margin-top:6px;"><span class="badge">—</span></div>
+          </div>
+          <div class="stat-card" id="mStatExpiry">
+            <div class="label">Expires</div>
+            <div class="value" style="font-size:22px;">—</div>
+            <div class="trend" id="mStatExpiryTrend"></div>
+          </div>
+          <div class="stat-card" id="mStatPayment">
+            <div class="label">Payment</div>
+            <div style="margin-top:6px;"><span class="badge unpaid">—</span></div>
+          </div>
+        </div>
+
+        <div class="grid grid-2 split">
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Membership Details</div>
+            <div id="membershipDetails"><div class="skeleton" style="height:120px;"></div></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Renewal</div>
+            <div id="renewalInfo">
+              <p class="text-2" style="font-size:14px;">If your membership is expiring soon, contact the front desk or tap below to request a renewal reminder.</p>
+              <button class="btn btn-primary mt-2" id="renewBtn">Request renewal</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== WORKOUT ============== -->
+      <section class="section" id="section-workout">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Today's Workout</div>
+            <div class="page-subtitle" id="workoutDay"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div id="workoutList"><div class="skeleton" style="height:200px;"></div></div>
+        </div>
+      </section>
+
+      <!-- ============== DIET ============== -->
+      <section class="section" id="section-diet">
+        <div class="page-header">
+          <div>
+            <div class="page-title">My Diet Plan</div>
+            <div class="page-subtitle">Daily nutrition breakdown</div>
+          </div>
+        </div>
+        <div class="grid grid-2 split">
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Meals</div>
+            <div id="dietList"><div class="skeleton" style="height:200px;"></div></div>
+          </div>
+          <div class="card">
+            <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Calorie Breakdown</div>
+            <canvas id="dietChart" height="240"></canvas>
+            <div id="dietTotal" class="text-center mt-2"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============== CALORIES ============== -->
+      <section class="section" id="section-calories">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Calorie Log</div>
+            <div class="page-subtitle" id="calorieDateLabel"></div>
+          </div>
+          <div class="flex gap-1">
+            <button class="btn btn-secondary" id="addConsumedBtn">+ Consumed</button>
+            <button class="btn btn-secondary" id="addBurnedBtn">+ Burned</button>
+          </div>
+        </div>
+        <div class="grid grid-3 mb-2">
+          <div class="stat-card">
+            <div class="label">Consumed</div>
+            <div class="value" style="color:var(--success);" id="calConsumed">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Burned</div>
+            <div class="value" style="color:var(--warning);" id="calBurned">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Net</div>
+            <div class="value" id="calNet">0</div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Today's Log</div>
+          <div id="calorieList"><div class="skeleton" style="height:120px;"></div></div>
+        </div>
+      </section>
+
+      <!-- ============== ATTENDANCE ============== -->
+      <section class="section" id="section-attendance">
+        <div class="page-header">
+          <div>
+            <div class="page-title">My Attendance</div>
+            <div class="page-subtitle" id="attendanceMonthLabel"></div>
+          </div>
+        </div>
+        <div class="grid grid-2 mb-2">
+          <div class="stat-card"><div class="label">Visits this month</div><div class="value" id="visitsMonth">0</div></div>
+          <div class="stat-card"><div class="label">Total visits</div><div class="value" id="visitsTotal">0</div></div>
+        </div>
+        <div class="card">
+          <div style="font-weight:700;margin-bottom:12px;font-size:15px;">Visit Calendar</div>
+          <div id="attendanceCalendar"></div>
+        </div>
+      </section>
+
+      <!-- ============== ANNOUNCEMENTS ============== -->
+      <section class="section" id="section-announcements">
+        <div class="page-header">
+          <div>
+            <div class="page-title">Announcements</div>
+            <div class="page-subtitle">Latest news from your gym</div>
+          </div>
+        </div>
+        <div id="announcementsList"><div class="skeleton" style="height:160px;"></div></div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="active" data-section="home">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+    Home
+  </button>
+  <button data-section="workout">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    Workout
+  </button>
+  <button data-section="diet">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+    Diet
+  </button>
+  <button data-section="calories">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.24 17 7.7c.343.91.849 1.792 1.657 2.657A8 8 0 0117.657 18.657z"/></svg>
+    Calories
+  </button>
+  <button data-section="announcements">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+    Updates
+  </button>
+</nav>
+
+<!-- ============================================================
+     CHECK-IN MODAL (QR scanner)
+     ============================================================ -->
+<div class="modal-overlay hidden" id="checkinModal">
+  <div class="modal" role="dialog" aria-labelledby="checkinTitle">
+    <div class="flex justify-between items-center mb-2">
+      <h3 id="checkinTitle" style="font-size:20px;font-weight:700;letter-spacing:-0.01em;">Check In</h3>
+      <button class="icon-btn" data-close="checkinModal" aria-label="Close" style="width:36px;height:36px;border-radius:50%;background:rgba(15,23,42,0.05);display:grid;place-items:center;color:var(--text-2);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div id="checkinScan">
+      <p class="text-2" style="font-size:14px;margin-bottom:8px;">Point your camera at the QR code on the gym's front desk terminal.</p>
+      <div id="qrReader"></div>
+      <div class="text-center mt-2">
+        <button class="btn btn-secondary" id="manualTokenBtn">Enter code manually</button>
+      </div>
+    </div>
+
+    <div id="checkinManual" class="hidden">
+      <label class="field">
+        <span>Token (from terminal screen)</span>
+        <input type="text" id="manualToken" class="input" placeholder="Paste the token shown on terminal" />
+      </label>
+      <label class="field">
+        <span>Terminal ID</span>
+        <input type="text" id="manualTid" class="input" placeholder="e.g. T-ABC12345" />
+      </label>
+      <div class="flex gap-1">
+        <button class="btn btn-secondary flex-1" id="manualBackBtn">Back</button>
+        <button class="btn btn-primary flex-1" id="manualSubmitBtn">Check in</button>
+      </div>
+    </div>
+
+    <div id="checkinSuccess" class="hidden text-center" style="padding: 12px 0;">
+      <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#22C55E,#16A34A);display:grid;place-items:center;margin:0 auto 12px;color:white;box-shadow:0 8px 24px rgba(34,197,94,0.3);animation:popIn .4s var(--ease-spring);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div style="font-size:20px;font-weight:700;" id="checkinSuccessName">—</div>
+      <div class="text-2" style="font-size:13px;margin-top:4px;">You're checked in. Have a great workout!</div>
+      <div id="checkinSuccessInfo" class="mt-2" style="font-size:13px;"></div>
+      <button class="btn btn-primary btn-block mt-2" data-close="checkinModal">Done</button>
+    </div>
+    <div id="checkinError" class="hidden text-center" style="padding: 12px 0;">
+      <div style="width:64px;height:64px;border-radius:50%;background:rgba(239,68,68,0.15);display:grid;place-items:center;margin:0 auto 12px;color:var(--danger);animation:popIn .4s var(--ease-spring);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </div>
+      <div style="font-size:18px;font-weight:700;" id="checkinErrorTitle">Check-in failed</div>
+      <div class="text-2" style="font-size:13px;margin-top:4px;" id="checkinErrorMsg">—</div>
+      <button class="btn btn-secondary btn-block mt-2" id="checkinRetryBtn">Try again</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+</style>
+
+<!-- ============================================================
+     CALORIE LOG MODAL
+     ============================================================ -->
+<div class="modal-overlay hidden" id="calorieModal">
+  <div class="modal" role="dialog" aria-labelledby="calorieModalTitle">
+    <div class="flex justify-between items-center mb-2">
+      <h3 id="calorieModalTitle" style="font-size:20px;font-weight:700;">Log Calories</h3>
+      <button class="icon-btn" data-close="calorieModal" aria-label="Close" style="width:36px;height:36px;border-radius:50%;background:rgba(15,23,42,0.05);display:grid;place-items:center;color:var(--text-2);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <form id="calorieForm">
+      <label class="field">
+        <span>Amount (kcal)</span>
+        <input type="number" id="calorieAmount" class="input" min="1" max="5000" required />
+      </label>
+      <label class="field">
+        <span>Notes (optional)</span>
+        <input type="text" id="calorieNotes" class="input" placeholder="e.g. protein shake, 30min run" />
+      </label>
+      <div class="flex gap-1">
+        <button type="button" class="btn btn-secondary flex-1" data-close="calorieModal">Cancel</button>
+        <button type="submit" class="btn btn-primary flex-1" id="calorieSubmit">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Set New Password modal (for recovery flow from email reset link) -->
+<div class="modal-overlay hidden" id="setPasswordModal">
+  <div class="modal" role="dialog">
+    <h3 style="font-size:20px;font-weight:700;margin-bottom:12px;letter-spacing:-0.01em;">Set New Password</h3>
+    <form id="setPasswordForm">
+      <label class="field"><span>New password *</span><input type="password" id="newPwd" class="input" required minlength="6" placeholder="Min 6 characters" /></label>
+      <label class="field"><span>Confirm password *</span><input type="password" id="newPwdConfirm" class="input" required minlength="6" placeholder="Repeat password" /></label>
+      <button type="submit" class="btn btn-primary btn-block">Update password</button>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   SUPABASE CONFIG — REPLACE THESE
+   ============================================================ */
+const SUPABASE_URL = 'https://mthakfdhqdkbgnzlxyaw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10aGFrZmRocWRrYmduemx4eWF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NjUxMDQsImV4cCI6MjA5NzM0MTEwNH0.2TAlkYnKsDX5_UhjWBH_7hQIi8LTk9Aj7xTDluh1Rq0';
+const DEBUG = false;
+
+let sb = null;
+let currentUser = null, currentProfile = null, currentMember = null;
+let chartInstances = {};
+let calorieModalMode = 'consumed';
+let qrScanner = null;
+let hasCheckedInToday = false;
+let pendingCheckinToken = null;
+let pendingCheckinTid = null;
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const debug = (...a) => { if (DEBUG) console.log('[member]', ...a); };
+
+function normalizePhone(p) { return (p || '').replace(/[^0-9+]/g, ''); }
+function formatDate(d, opts = {}) {
+  if (!d) return '—';
+  const date = typeof d === 'string' ? new Date(d) : d;
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', ...opts });
+}
+function daysBetween(a, b) { return Math.ceil((new Date(b) - new Date(a)) / 86400000); }
+function initials(name) { return (name || '?').split(/\s+/).slice(0,2).map(s => s[0]).join('').toUpperCase(); }
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function setBtnLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) { btn._origHTML = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+  else { btn.disabled = false; if (btn._origHTML) btn.innerHTML = btn._origHTML; }
+}
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+
+function toast(message, type = 'info', title = '') {
+  const container = $('#toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = {
+    success: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    error:   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    warning: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>',
+    info:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+  };
+  el.innerHTML = `<span class="icon">${icons[type] || icons.info}</span><div>${title ? `<div class="title">${title}</div>` : ''}<div class="msg">${escapeHtml(message)}</div></div>`;
+  container.appendChild(el);
+  setTimeout(() => { el.style.animation = 'slideOutRight .3s ease forwards'; setTimeout(() => el.remove(), 300); }, 4000);
+}
+
+function emptyState(title, desc) {
+  return `<div class="empty-state">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <div class="title">${escapeHtml(title)}</div>
+    <div class="desc">${escapeHtml(desc)}</div>
+  </div>`;
+}
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+async function initSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_ANON_KEY') {
+    toast('Please configure SUPABASE_URL and SUPABASE_ANON_KEY at the top of index.html', 'error', 'Configuration required');
+    return false;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  return true;
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) {
+    await onAuthSuccess(session.user);
+  }
+}
+
+let authMode = 'email';
+function setAuthMode(mode) {
+  authMode = mode;
+  $$('#authTabs .auth-tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+  $('#emailField').classList.toggle('hidden', mode !== 'email');
+  $('#phoneField').classList.toggle('hidden', mode !== 'phone');
+  $('#authEmail').required = mode === 'email';
+  $('#authPhone').required = mode === 'phone';
+  $('#authSubmit .btn-label').textContent = 'Sign In';
+  // Focus the relevant field
+  setTimeout(() => {
+    if (mode === 'email') $('#authEmail').focus();
+    else $('#authPhone').focus();
+  }, 50);
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const btn = $('#authSubmit');
+  setBtnLoading(btn, true);
+  try {
+    const password = $('#authPassword').value;
+    if (!password) throw new Error('Password is required');
+    if (password.length < 6) throw new Error('Password must be at least 6 characters');
+
+    let data, error;
+    if (authMode === 'email') {
+      const email = $('#authEmail').value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Please enter a valid email address');
+      ({ data, error } = await sb.auth.signInWithPassword({ email, password }));
+    } else {
+      const phone = normalizePhone($('#authPhone').value);
+      if (phone.length < 10) throw new Error('Please enter a valid phone number');
+      ({ data, error } = await sb.auth.signInWithPassword({ phone, password }));
+    }
+    if (error) throw error;
+    if (!data?.user) throw new Error('Sign-in failed — no user returned');
+    await onAuthSuccess(data.user);
+    toast('Welcome back!', 'success');
+  } catch (err) {
+    debug(err);
+    toast(err.message || 'Sign-in failed', 'error', 'Authentication error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function onAuthSuccess(user) {
+  currentUser = user;
+  let { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+
+  // AUTO-CREATE PROFILE if missing (trigger may not have fired for pre-existing auth users)
+  if (error || !profile) {
+    debug('Profile missing, auto-creating...');
+    try {
+      const newProfile = {
+        id: user.id,
+        name: user.user_metadata?.name || (user.email ? user.email.split('@')[0] : (user.phone || 'User')),
+        email: user.email || null,
+        phone: user.user_metadata?.phone || user.phone || null,
+        role: 'member',
+        is_active: true
+      };
+      const { data: created, error: createErr } = await sb.from('profiles').insert(newProfile).select().single();
+      if (createErr) throw createErr;
+      profile = created;
+      toast('Profile created automatically. Welcome!', 'success');
+    } catch (e) {
+      debug('Auto-create profile failed:', e);
+      toast('Could not create profile. Please ask staff to set up your account.', 'error', 'Profile setup failed');
+      await sb.auth.signOut();
+      return;
+    }
+  }
+
+  if (!profile.is_active) {
+    toast('Your account is inactive. Contact staff.', 'error', 'Account inactive');
+    await sb.auth.signOut();
+    return;
+  }
+  currentProfile = profile;
+
+  const { data: member } = await sb
+    .from('members').select('*').eq('profile_id', user.id)
+    .order('created_at', { ascending: false }).limit(1).single();
+  currentMember = member;
+
+  // Render header info
+  const firstName = (profile.name || 'Member').split(' ')[0];
+  $('#homeFirstName').textContent = firstName;
+  $('#userNameSide').textContent = profile.name || 'Member';
+  $('#userAvatarSide').textContent = initials(profile.name);
+  if (profile.avatar_url) {
+    $('#userAvatarSide').innerHTML = `<img src="${profile.avatar_url}" alt="" />`;
+  }
+
+  $('#authScreen').classList.add('hidden');
+  $('#app').classList.remove('hidden');
+
+  const now = new Date();
+  $('#homeDate').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  $('#todayDate').textContent = now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Parallel load
+  await Promise.all([
+    loadMembership(),
+    loadWorkout(),
+    loadDiet(),
+    loadCalories(),
+    loadAttendance(),
+    loadAnnouncements(),
+    loadGymSettings(),
+    loadHomeOverview()
+  ]);
+
+  // Realtime
+  sb.channel('public:announcements')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'announcements' }, () => loadAnnouncements())
+    .subscribe();
+
+  // Check if URL has token params (member scanned QR via camera app)
+  const urlParams = new URLSearchParams(window.location.search);
+  const t = urlParams.get('t');
+  const tid = urlParams.get('tid');
+  if (t && tid) {
+    pendingCheckinToken = t;
+    pendingCheckinTid = tid;
+    openCheckinModal('manual-prefilled');
+    // Clean URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+  } else {
+    // Check if already checked in today — if not, show the popup
+    await maybeShowCheckinPrompt();
+  }
+}
+
+async function maybeShowCheckinPrompt() {
+  if (!currentMember) return;
+  try {
+    const today = isoDate(new Date());
+    const tomorrow = isoDate(new Date(Date.now() + 86400000));
+    const { count } = await sb
+      .from('attendance')
+      .select('id', { count: 'exact', head: true })
+      .eq('member_id', currentMember.id)
+      .gte('check_in_time', today)
+      .lt('check_in_time', tomorrow);
+    hasCheckedInToday = (count || 0) > 0;
+    if (!hasCheckedInToday) {
+      // Show the check-in popup automatically
+      setTimeout(() => openCheckinModal('scan'), 800);
+    }
+  } catch (err) {
+    debug(err);
+  }
+}
+
+async function loadGymSettings() {
+  try {
+    const { data } = await sb.from('system_settings').select('*').eq('id', 1).single();
+    if (data?.gym_name) {
+      $('#gymNameSide').textContent = data.gym_name;
+      $('#gymNameTop').textContent = data.gym_name;
+    }
+  } catch (e) { debug(e); }
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null; currentMember = null;
+  $('#app').classList.add('hidden');
+  $('#authScreen').classList.remove('hidden');
+  toast('Signed out', 'info');
+}
+
+/* ============================================================
+   LOADERS
+   ============================================================ */
+function getMemberStatus(m) {
+  if (!m) return { label: 'No plan', class: 'expired' };
+  const today = new Date();
+  const expiry = new Date(m.expiry_date);
+  const days = daysBetween(today, expiry);
+  if (expiry < today) return { label: 'Expired', class: 'expired' };
+  if (days <= 7) return { label: 'Expiring', class: 'expiring' };
+  return { label: 'Active', class: 'active' };
+}
+
+async function loadMembership() {
+  const m = currentMember;
+  if (!m) {
+    ['#statStatus', '#mStatStatus'].forEach(s => $(s + ' .badge') ? $(s + ' .badge, ' + s + ' div:last-child').forEach = null : null);
+    $('#membershipDetails').innerHTML = emptyState('No membership on file', 'Please contact the front desk to set up your membership.');
+    return;
+  }
+  const today = new Date();
+  const expiry = new Date(m.expiry_date);
+  const days = daysBetween(today, expiry);
+  let status, badgeClass;
+  if (expiry < today) { status = 'Expired'; badgeClass = 'expired'; }
+  else if (days <= 7) { status = 'Expiring soon'; badgeClass = 'expiring'; }
+  else { status = 'Active'; badgeClass = 'active'; }
+
+  // Home stats
+  $('#statStatus').innerHTML = `<div class="label">Status</div><div style="margin-top:6px;"><span class="badge ${badgeClass}">${status}</span></div>`;
+  $('#statExpiry').innerHTML = `<div class="label">Expires</div><div class="value" style="font-size:22px;">${formatDate(m.expiry_date, { month: 'short', day: 'numeric' })}</div><div class="trend ${days >= 0 ? 'up' : 'down'}">${days >= 0 ? `${days} day${days === 1 ? '' : 's'} left` : `Expired ${-days}d ago`}</div>`;
+
+  // Membership page stats
+  $('#mStatStatus').innerHTML = `<div class="label">Status</div><div style="margin-top:6px;"><span class="badge ${badgeClass}">${status}</span></div>`;
+  $('#mStatExpiry').innerHTML = `<div class="label">Expires</div><div class="value" style="font-size:22px;">${formatDate(m.expiry_date)}</div><div class="trend ${days >= 0 ? 'up' : 'down'}">${days >= 0 ? `${days} day${days === 1 ? '' : 's'} left` : `Expired ${-days}d ago`}</div>`;
+  $('#mStatPayment').innerHTML = m.is_paid
+    ? `<div class="label">Payment</div><div style="margin-top:6px;"><span class="badge active">Paid</span></div>`
+    : `<div class="label">Payment</div><div style="margin-top:6px;"><span class="badge unpaid">Balance: $${Number(m.balance_due || 0).toFixed(0)}</span></div>`;
+
+  const typeLabels = { monthly: 'Monthly', yearly: 'Yearly', '10_pass': '10-Pass' };
+  $('#membershipDetails').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:14px;">
+      <div><div class="text-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Plan</div><div style="font-weight:600;margin-top:2px;">${typeLabels[m.membership_type]}</div></div>
+      <div><div class="text-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Start date</div><div style="font-weight:600;margin-top:2px;">${formatDate(m.start_date)}</div></div>
+      <div><div class="text-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Member ID</div><div style="font-weight:600;font-family:monospace;font-size:12px;margin-top:2px;">${m.id.slice(0,8)}</div></div>
+      <div><div class="text-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;">Emergency</div><div style="font-weight:600;margin-top:2px;">${escapeHtml(m.emergency_contact || '—')}</div></div>
+    </div>
+    ${m.notes ? `<div class="mt-2" style="padding:10px;background:rgba(108,99,255,0.06);border-radius:8px;font-size:12px;color:var(--text-2);">${escapeHtml(m.notes)}</div>` : ''}
+  `;
+}
+
+async function loadWorkout() {
+  if (!currentMember) {
+    $('#workoutList').innerHTML = emptyState('No membership', 'Contact the front desk.');
+    $('#homeWorkout').innerHTML = emptyState('No membership', '—');
+    return;
+  }
+  const today = new Date().getDay();
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  $('#workoutDay').textContent = dayNames[today];
+  try {
+    const { data, error } = await sb
+      .from('workout_plans').select('*')
+      .eq('member_id', currentMember.id)
+      .eq('day_of_week', today)
+      .order('sort_order', { ascending: true });
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      $('#workoutList').innerHTML = emptyState('Rest day', 'No workout scheduled for today. Enjoy your recovery!');
+      $('#homeWorkout').innerHTML = `<div class="text-3" style="font-size:13px;">Rest day — no workout scheduled.</div>`;
+      return;
+    }
+
+    const html = data.map((ex, i) => `
+      <div class="exercise-item">
+        <div class="num">${i + 1}</div>
+        <div class="flex-1">
+          <div class="name">${escapeHtml(ex.exercise_name)}</div>
+          <div class="meta">
+            ${ex.sets ? `${ex.sets} sets × ${ex.reps || '—'}` : ''}
+            ${ex.duration_minutes ? ` · ${ex.duration_minutes} min` : ''}
+            ${ex.rest_seconds ? ` · ${ex.rest_seconds}s rest` : ''}
+          </div>
+          ${ex.notes ? `<div class="meta mt-1">${escapeHtml(ex.notes)}</div>` : ''}
+        </div>
+      </div>
+    `).join('');
+    $('#workoutList').innerHTML = html;
+    $('#homeWorkout').innerHTML = html.slice(0, 2) + (data.length > 2 ? `<div class="text-center mt-1"><button class="btn btn-ghost btn-sm" data-section="workout">View all ${data.length}</button></div>` : '');
+    $$('#homeWorkout [data-section]').forEach(b => b.addEventListener('click', () => switchSection('workout')));
+  } catch (err) {
+    debug(err);
+    $('#workoutList').innerHTML = emptyState('Failed to load', err.message);
+  }
+}
+
+async function loadDiet() {
+  if (!currentMember) {
+    $('#dietList').innerHTML = emptyState('No membership', 'Contact the front desk.');
+    return;
+  }
+  try {
+    const { data, error } = await sb
+      .from('diet_plans').select('*')
+      .eq('member_id', currentMember.id)
+      .order('meal_time', { ascending: true });
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      $('#dietList').innerHTML = emptyState('No diet plan', "Your coach hasn't set a diet plan yet.");
+      return;
+    }
+    const mealLabels = { breakfast: 'Breakfast', mid_morning: 'Mid-Morning', lunch: 'Lunch', afternoon: 'Afternoon', dinner: 'Dinner', post_workout: 'Post-Workout' };
+    const grouped = {};
+    data.forEach(m => { if (!grouped[m.meal_time]) grouped[m.meal_time] = []; grouped[m.meal_time].push(m); });
+    const mealOrder = ['breakfast','mid_morning','lunch','afternoon','dinner','post_workout'];
+    $('#dietList').innerHTML = mealOrder.filter(k => grouped[k]).map(k => `
+      <div class="mb-2">
+        <div class="text-3" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px;">${mealLabels[k]}</div>
+        ${grouped[k].map(item => `
+          <div class="meal-item">
+            <div class="flex-1">
+              <div class="name">${escapeHtml(item.food_item)}</div>
+              <div class="meta">${escapeHtml(item.quantity || '')} ${item.notes ? '· ' + escapeHtml(item.notes) : ''}</div>
+            </div>
+            <div style="color:var(--accent);font-weight:700;">${item.calories} kcal</div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+
+    const totals = {};
+    data.forEach(d => { totals[d.meal_time] = (totals[d.meal_time] || 0) + d.calories; });
+    const total = data.reduce((s, d) => s + d.calories, 0);
+    renderDietChart(mealOrder.filter(k => totals[k]).map(k => mealLabels[k]), mealOrder.filter(k => totals[k]).map(k => totals[k]));
+    $('#dietTotal').innerHTML = `<div style="font-size:28px;font-weight:800;color:var(--accent);">${total}</div><div class="text-3" style="font-size:12px;">kcal / day</div>`;
+  } catch (err) {
+    debug(err);
+    $('#dietList').innerHTML = emptyState('Failed to load', err.message);
+  }
+}
+
+function renderDietChart(labels, data) {
+  const ctx = $('#dietChart');
+  if (!ctx) return;
+  if (chartInstances.diet) chartInstances.diet.destroy();
+  chartInstances.diet = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: ['#6C63FF','#22C55E','#F59E0B','#EF4444','#06B6D4','#EC4899'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: { legend: { position: 'bottom', labels: { color: '#475569', font: { size: 11, family: 'Inter' }, padding: 10, boxWidth: 12 } } }
+    }
+  });
+}
+
+async function loadCalories() {
+  $('#calorieDateLabel').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  if (!currentMember) return;
+  try {
+    const today = isoDate(new Date());
+    const { data, error } = await sb
+      .from('calorie_logs').select('*')
+      .eq('member_id', currentMember.id)
+      .eq('log_date', today)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    const consumed = data.reduce((s, l) => s + (l.calories_consumed || 0), 0);
+    const burned = data.reduce((s, l) => s + (l.calories_burned || 0), 0);
+    $('#calConsumed').textContent = consumed;
+    $('#calBurned').textContent = burned;
+    $('#calNet').textContent = consumed - burned;
+
+    if (!data.length) {
+      $('#calorieList').innerHTML = emptyState('No entries today', 'Log your first meal or workout above.');
+      $('#homeCalories').innerHTML = `<div class="text-3" style="font-size:13px;">No entries yet today.</div>`;
+    } else {
+      const html = data.map(l => `
+        <div class="exercise-item">
+          <div class="num" style="background:${l.calories_consumed ? 'linear-gradient(135deg,#22C55E,#16A34A)' : 'linear-gradient(135deg,#F59E0B,#D97706)'};">
+            ${l.calories_consumed ? '+' : '−'}
+          </div>
+          <div class="flex-1">
+            <div class="name">${l.calories_consumed || l.calories_burned} kcal</div>
+            <div class="meta">${l.notes || (l.calories_consumed ? 'Consumed' : 'Burned')} · ${new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        </div>
+      `).join('');
+      $('#calorieList').innerHTML = html;
+      $('#homeCalories').innerHTML = `
+        <div class="flex gap-2 items-center" style="font-size:14px;">
+          <div class="flex-1"><div class="text-3" style="font-size:11px;">Consumed</div><div style="font-weight:700;color:var(--success);">${consumed}</div></div>
+          <div class="flex-1"><div class="text-3" style="font-size:11px;">Burned</div><div style="font-weight:700;color:var(--warning);">${burned}</div></div>
+          <div class="flex-1"><div class="text-3" style="font-size:11px;">Net</div><div style="font-weight:700;">${consumed - burned}</div></div>
+        </div>`;
+    }
+  } catch (err) {
+    debug(err);
+    toast('Failed to load calorie log', 'error');
+  }
+}
+
+function openCalorieModal(mode) {
+  calorieModalMode = mode;
+  $('#calorieModalTitle').textContent = mode === 'consumed' ? 'Log Consumed Calories' : 'Log Burned Calories';
+  $('#calorieAmount').value = '';
+  $('#calorieNotes').value = '';
+  $('#calorieModal').classList.remove('hidden');
+  setTimeout(() => $('#calorieAmount').focus(), 100);
+}
+
+async function handleCalorieSubmit(e) {
+  e.preventDefault();
+  const btn = $('#calorieSubmit');
+  setBtnLoading(btn, true);
+  try {
+    const amount = parseInt($('#calorieAmount').value, 10);
+    if (!amount || amount < 1) throw new Error('Enter a valid amount');
+    const notes = $('#calorieNotes').value.trim();
+    const today = isoDate(new Date());
+    const payload = {
+      member_id: currentMember.id,
+      log_date: today,
+      calories_consumed: calorieModalMode === 'consumed' ? amount : 0,
+      calories_burned: calorieModalMode === 'burned' ? amount : 0,
+      notes
+    };
+    const { data, error } = await sb.from('calorie_logs').insert(payload).select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Insert failed');
+    closeModal('calorieModal');
+    toast(`${amount} kcal ${calorieModalMode}`, 'success', 'Logged');
+    await loadCalories();
+  } catch (err) {
+    debug(err);
+    toast(err.message || 'Failed to log', 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+function closeModal(id) { $('#' + id).classList.add('hidden'); }
+
+async function loadAttendance() {
+  if (!currentMember) return;
+  const now = new Date();
+  $('#attendanceMonthLabel').textContent = now.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  try {
+    const { data, error } = await sb
+      .from('attendance').select('check_in_time')
+      .eq('member_id', currentMember.id)
+      .order('check_in_time', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const visitsThisMonth = data.filter(a => {
+      const d = new Date(a.check_in_time);
+      return d >= monthStart && d <= monthEnd;
+    }).length;
+    $('#visitsMonth').textContent = visitsThisMonth;
+    $('#visitsTotal').textContent = data.length;
+    $('#statVisits').textContent = visitsThisMonth;
+    $('#statVisitsTotal').textContent = data.length;
+    renderCalendar(data);
+  } catch (err) {
+    debug(err);
+    toast('Failed to load attendance', 'error');
+  }
+}
+
+function renderCalendar(records) {
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const visitDates = new Set(records.map(r => {
+    const d = new Date(r.check_in_time);
+    return d.getFullYear() === year && d.getMonth() === month ? d.getDate() : null;
+  }).filter(Boolean));
+
+  let html = '<div class="heatmap">';
+  ['S','M','T','W','T','F','S'].forEach(d => html += `<div style="aspect-ratio:auto;background:transparent;border:none;color:var(--text-3);font-size:11px;text-align:center;padding:4px;font-weight:600;">${d}</div>`);
+  for (let i = 0; i < firstDay; i++) html += '<div style="background:transparent;border:none;"></div>';
+  for (let d = 1; d <= daysInMonth; d++) {
+    const has = visitDates.has(d);
+    const isToday = d === now.getDate();
+    html += `<div class="day ${has ? 'has' : ''} ${isToday ? 'today' : ''}"><span class="lbl">${d}</span></div>`;
+  }
+  html += '</div>';
+  $('#attendanceCalendar').innerHTML = html;
+}
+
+async function loadAnnouncements() {
+  try {
+    const nowIso = new Date().toISOString();
+    let q = sb.from('announcements').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(20);
+    const { data, error } = await q;
+    if (error) throw error;
+    // Filter by show_from/show_until client-side (Supabase or() with two conditions can be tricky)
+    const filtered = (data || []).filter(a => {
+      const now = Date.now();
+      const from = a.show_from ? new Date(a.show_from).getTime() : 0;
+      const until = a.show_until ? new Date(a.show_until).getTime() : Infinity;
+      return now >= from && now <= until;
+    });
+    if (filtered.length === 0) {
+      $('#announcementsList').innerHTML = emptyState('No announcements', 'Check back later for gym updates.');
+      $('#annBadge').style.display = 'none';
+      return;
+    }
+    $('#announcementsList').innerHTML = filtered.map(a => `
+      <div class="card card-hover mb-2">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent-2));"></div>
+          <div style="font-weight:700;font-size:15px;">${escapeHtml(a.title)}</div>
+          <div class="text-3" style="font-size:11px;margin-left:auto;">${formatDate(a.created_at)}</div>
+        </div>
+        <p class="text-2" style="font-size:14px;line-height:1.6;">${escapeHtml(a.body)}</p>
+      </div>
+    `).join('');
+    $('#annBadge').textContent = filtered.length;
+    $('#annBadge').style.display = 'inline-flex';
+  } catch (err) {
+    debug(err);
+    toast('Failed to load announcements', 'error');
+  }
+}
+
+async function loadHomeOverview() {
+  // Already covered by loadMembership + loadAttendance + loadWorkout + loadCalories
+}
+
+/* ============================================================
+   CHECK-IN MODAL  (QR scanner integration)
+   ============================================================ */
+function openCheckinModal(mode = 'scan') {
+  $('#checkinModal').classList.remove('hidden');
+  $('#checkinScan').classList.remove('hidden');
+  $('#checkinManual').classList.add('hidden');
+  $('#checkinSuccess').classList.add('hidden');
+  $('#checkinError').classList.add('hidden');
+
+  if (mode === 'manual-prefilled' && pendingCheckinToken && pendingCheckinTid) {
+    $('#checkinScan').classList.add('hidden');
+    $('#checkinManual').classList.remove('hidden');
+    $('#manualToken').value = pendingCheckinToken;
+    $('#manualTid').value = pendingCheckinTid;
+    // Auto-submit
+    setTimeout(() => doManualCheckin(), 300);
+    return;
+  }
+
+  // Start QR scanner
+  setTimeout(() => startQrScanner(), 200);
+}
+
+function startQrScanner() {
+  if (!window.Html5Qrcode) {
+    toast('QR scanner library failed to load. Use manual entry.', 'warning');
+    return;
+  }
+  if (qrScanner) {
+    try { qrScanner.clear(); } catch (e) {}
+    qrScanner = null;
+  }
+  try {
+    qrScanner = new Html5Qrcode('qrReader');
+    qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 220, height: 220 } },
+      (decodedText) => {
+        debug('decoded', decodedText);
+        handleQrScan(decodedText);
+      },
+      (errorMessage) => {
+        // ignore per-frame errors
+      }
+    ).catch(err => {
+      debug('scanner start err', err);
+      toast('Camera unavailable. Use manual entry.', 'warning', 'Camera blocked');
+    });
+  } catch (err) {
+    debug(err);
+    toast('Scanner failed. Try manual entry.', 'warning');
+  }
+}
+
+function stopQrScanner() {
+  if (qrScanner) {
+    try { qrScanner.stop().then(() => qrScanner.clear()).catch(() => {}); } catch (e) {}
+    qrScanner = null;
+  }
+}
+
+function handleQrScan(text) {
+  stopQrScanner();
+  // The QR encodes JSON: { token, terminal, ts, url }
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch (e) {
+    // Maybe it's a URL with query params
+    try {
+      const url = new URL(text);
+      const t = url.searchParams.get('t');
+      const tid = url.searchParams.get('tid');
+      if (t && tid) {
+        payload = { token: t, terminal: tid };
+      }
+    } catch (e2) {
+      // Give up — try treating text as raw token
+      payload = { token: text, terminal: '' };
+    }
+  }
+  if (!payload.token) {
+    showCheckinError('Invalid QR', 'This QR code does not contain a valid check-in token.');
+    return;
+  }
+  doCheckin(payload.token, payload.terminal || '');
+}
+
+async function doManualCheckin() {
+  const token = $('#manualToken').value.trim();
+  const tid = $('#manualTid').value.trim();
+  if (!token || !tid) {
+    toast('Token and terminal ID required', 'warning');
+    return;
+  }
+  await doCheckin(token, tid);
+}
+
+async function doCheckin(token, terminalId) {
+  if (!currentProfile?.phone) {
+    showCheckinError('Profile incomplete', 'No phone number on your profile. Ask staff to update it.');
+    return;
+  }
+  // Show loading
+  $('#checkinScan').classList.add('hidden');
+  $('#checkinManual').classList.add('hidden');
+  $('#checkinModal').querySelector('.modal').insertAdjacentHTML('afterbegin',
+    `<div id="checkinLoading" style="text-align:center;padding:40px 0;">
+      <div class="spinner spinner-dark" style="width:32px;height:32px;margin:0 auto 12px;"></div>
+      <div class="text-2" style="font-size:14px;">Checking you in…</div>
+    </div>`);
+
+  try {
+    const { data, error } = await sb.rpc('mark_attendance_by_phone', {
+      p_qr_token: token,
+      p_terminal_id: terminalId,
+      p_phone: currentProfile.phone,
+      p_photo_url: null
+    });
+    $('#checkinLoading')?.remove();
+    if (error) throw error;
+    const result = data || { ok: false, error: 'No response' };
+    if (!result.ok) {
+      showCheckinError('Check-in failed', result.error || 'Please try again.');
+      return;
+    }
+    showCheckinSuccess(result.member);
+    hasCheckedInToday = true;
+    await loadAttendance();
+  } catch (err) {
+    debug(err);
+    $('#checkinLoading')?.remove();
+    showCheckinError('Network error', err.message || 'Please try again.');
+  }
+}
+
+function showCheckinSuccess(member) {
+  $('#checkinScan').classList.add('hidden');
+  $('#checkinManual').classList.add('hidden');
+  $('#checkinError').classList.add('hidden');
+  $('#checkinSuccess').classList.remove('hidden');
+  $('#checkinSuccessName').textContent = member.name || 'Member';
+  const typeLabels = { monthly: 'Monthly', yearly: 'Yearly', '10_pass': '10-Pass' };
+  $('#checkinSuccessInfo').innerHTML = `
+    <div style="padding:12px;background:rgba(34,197,94,0.08);border-radius:12px;">
+      <div class="flex justify-between" style="margin-bottom:4px;"><span class="text-3">Plan</span><span style="font-weight:600;">${typeLabels[member.membership_type] || '—'}</span></div>
+      <div class="flex justify-between" style="margin-bottom:4px;"><span class="text-3">Days remaining</span><span style="font-weight:600;">${member.days_remaining}</span></div>
+      <div class="flex justify-between"><span class="text-3">Status</span><span style="font-weight:600;color:${member.status === 'active' ? 'var(--success)' : member.status === 'expiring' ? 'var(--warning)' : 'var(--danger)'};">${member.status}</span></div>
+    </div>
+  `;
+}
+
+function showCheckinError(title, msg) {
+  $('#checkinScan').classList.add('hidden');
+  $('#checkinManual').classList.add('hidden');
+  $('#checkinSuccess').classList.add('hidden');
+  $('#checkinError').classList.remove('hidden');
+  $('#checkinErrorTitle').textContent = title;
+  $('#checkinErrorMsg').textContent = msg;
+}
+
+function resetCheckinModal() {
+  stopQrScanner();
+  $('#checkinLoading')?.remove();
+  $('#checkinScan').classList.remove('hidden');
+  $('#checkinManual').classList.add('hidden');
+  $('#checkinSuccess').classList.add('hidden');
+  $('#checkinError').classList.add('hidden');
+  startQrScanner();
+}
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function switchSection(name) {
+  $$('.section').forEach(s => s.classList.remove('active'));
+  const target = $('#section-' + name);
+  if (target) target.classList.add('active');
+  $$('.nav-item, .bottom-nav button').forEach(b => b.classList.toggle('active', b.dataset.section === name));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ============================================================
+   PASSWORD RECOVERY FLOW — when user clicks email reset link
+   ============================================================ */
+function checkRecoveryFlow() {
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery') || hash.includes('type=invite')) {
+    setTimeout(() => {
+      $('#setPasswordModal').classList.remove('hidden');
+    }, 1000);
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+async function handleSetPassword(e) {
+  e.preventDefault();
+  const pwd = $('#newPwd').value;
+  const confirmPwd = $('#newPwdConfirm').value;
+  if (pwd !== confirmPwd) { toast('Passwords do not match', 'error'); return; }
+  if (pwd.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
+  const btn = e.target.querySelector('button[type="submit"]');
+  setBtnLoading(btn, true);
+  try {
+    const { error } = await sb.auth.updateUser({ password: pwd });
+    if (error) throw error;
+    toast('Password updated successfully', 'success');
+    closeModal('setPasswordModal');
+  } catch (err) {
+    toast(err.message || 'Failed to update password', 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init() {
+  $$('#authTabs .auth-tab').forEach(t => t.addEventListener('click', () => setAuthMode(t.dataset.mode)));
+  $('#authForm').addEventListener('submit', handleAuthSubmit);
+
+  $('#logoutBtnSide').addEventListener('click', handleLogout);
+  $('#logoutBtnTop').addEventListener('click', handleLogout);
+
+  $$('.nav-item, .bottom-nav button').forEach(b => {
+    b.addEventListener('click', () => switchSection(b.dataset.section));
+  });
+
+  $('#addConsumedBtn').addEventListener('click', () => openCalorieModal('consumed'));
+  $('#addBurnedBtn').addEventListener('click', () => openCalorieModal('burned'));
+  $('#calorieForm').addEventListener('submit', handleCalorieSubmit);
+  $('#setPasswordForm').addEventListener('submit', handleSetPassword);
+  $$('[data-close]').forEach(b => b.addEventListener('click', () => {
+    closeModal(b.dataset.close);
+    if (b.dataset.close === 'checkinModal') stopQrScanner();
+  }));
+
+  $('#renewBtn').addEventListener('click', () => {
+    toast('Renewal request sent — staff will contact you shortly.', 'success', 'Request received');
+  });
+
+  // Check-in banner
+  $('#checkinBanner').addEventListener('click', () => openCheckinModal('scan'));
+  $('#manualTokenBtn').addEventListener('click', () => {
+    stopQrScanner();
+    $('#checkinScan').classList.add('hidden');
+    $('#checkinManual').classList.remove('hidden');
+  });
+  $('#manualBackBtn').addEventListener('click', () => {
+    $('#checkinManual').classList.add('hidden');
+    $('#checkinScan').classList.remove('hidden');
+    startQrScanner();
+  });
+  $('#manualSubmitBtn').addEventListener('click', doManualCheckin);
+  $('#checkinRetryBtn').addEventListener('click', resetCheckinModal);
+
+  // Modal overlay click outside (mobile sheet — only close if click is on overlay, not modal)
+  $$('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) {
+        overlay.classList.add('hidden');
+        if (overlay.id === 'checkinModal') stopQrScanner();
+      }
+    });
+  });
+
+  // Esc to close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      $$('.modal-overlay:not(.hidden)').forEach(m => {
+        m.classList.add('hidden');
+        if (m.id === 'checkinModal') stopQrScanner();
+      });
+    }
+  });
+
+  // Prevent body scroll when modal open is handled natively by sheet UX
+  // Init Supabase
+  const ok = await initSupabase();
+  if (!ok) return;
+  await checkSession();
+
+  // Check for password recovery flow (URL hash from reset email)
+  checkRecoveryFlow();
+
+  sb.auth.onAuthStateChange((event, session) => {
+    debug('auth event', event);
+    if (event === 'SIGNED_IN' && session?.user && !currentUser) onAuthSuccess(session.user);
+    if (event === 'SIGNED_OUT') {
+      currentUser = null; currentProfile = null; currentMember = null;
+      $('#app').classList.add('hidden');
+      $('#authScreen').classList.remove('hidden');
+    }
+  });
+
+  // Page lifecycle — stop camera when page is hidden (prevents phone errors)
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && qrScanner) {
+      stopQrScanner();
+    }
+  });
+  window.addEventListener('pagehide', () => stopQrScanner());
+  window.addEventListener('blur', () => {
+    // Don't kill camera on every blur (would interrupt if user opens notification panel)
+    // Only kill on visibilitychange
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
