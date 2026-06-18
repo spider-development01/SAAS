@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0" />
+<meta name="theme-color" content="#F2F4F8" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>IronCore · Attendance Terminal</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.4.4/qrcode.min.js"></script>
+
+<style>
+/* ============================================================
+   DESIGN SYSTEM — matches member portal & admin (light glass)
+   ============================================================ */
+:root {
+  --bg-base: #F2F4F8;
+  --orb-1: rgba(108, 99, 255, 0.20);
+  --orb-2: rgba(0, 122, 255, 0.14);
+  --orb-3: rgba(255, 90, 159, 0.10);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-bg-strong: rgba(255, 255, 255, 0.86);
+  --glass-bg-soft: rgba(255, 255, 255, 0.5);
+  --glass-border: rgba(255, 255, 255, 0.7);
+  --glass-border-soft: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.08);
+  --glass-shadow-lg: 0 20px 60px rgba(15, 23, 42, 0.12);
+  --glass-blur: 24px;
+  --accent: #6C63FF;
+  --accent-2: #8B7CFF;
+  --accent-glow: rgba(108, 99, 255, 0.25);
+  --apple-blue: #007AFF;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --text-1: #0F172A;
+  --text-2: #475569;
+  --text-3: #94A3B8;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-pill: 999px;
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
+  color: var(--text-1);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  background: var(--bg-base);
+  overflow-x: hidden;
+  min-height: 100vh; min-height: 100dvh;
+}
+body::before, body::after {
+  content: ''; position: fixed; border-radius: 50%;
+  filter: blur(80px); z-index: -1; pointer-events: none; will-change: transform;
+}
+body::before {
+  width: 520px; height: 520px; background: var(--orb-1);
+  top: -120px; left: -100px; animation: float1 20s ease-in-out infinite;
+}
+body::after {
+  width: 460px; height: 460px; background: var(--orb-2);
+  bottom: -120px; right: -80px; animation: float2 25s ease-in-out infinite;
+}
+@keyframes float1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(60px,80px) scale(1.1); } }
+@keyframes float2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-80px,-60px) scale(0.9); } }
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(15,23,42,0.15); border-radius: 3px; }
+
+.badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: var(--radius-pill); font-size: 12px; font-weight: 600; background: rgba(148, 163, 184, 0.15); color: var(--text-2); border: 1px solid rgba(148, 163, 184, 0.2); }
+.badge.active { background: rgba(34,197,94,0.15); color: #15803D; border-color: rgba(34,197,94,0.3); }
+.badge.expiring { background: rgba(245,158,11,0.15); color: #B45309; border-color: rgba(245,158,11,0.3); }
+.badge.expired { background: rgba(239,68,68,0.15); color: #B91C1C; border-color: rgba(239,68,68,0.3); }
+.badge.unpaid { background: rgba(239,68,68,0.15); color: #B91C1C; border-color: rgba(239,68,68,0.3); }
+.badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: var(--radius-sm); font-weight: 600; font-size: 14px; transition: all .25s var(--ease-spring); border: 1px solid transparent; white-space: nowrap; min-height: 44px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; box-shadow: 0 4px 14px var(--accent-glow); }
+.btn-primary:hover:not(:disabled) { box-shadow: 0 8px 22px var(--accent-glow); transform: translateY(-1px); }
+.btn-secondary { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); color: var(--text-1); border-color: rgba(15, 23, 42, 0.1); box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04); }
+.btn-secondary:hover:not(:disabled) { background: rgba(255, 255, 255, 0.95); border-color: var(--accent); color: var(--accent); }
+.btn-ghost { color: var(--text-2); }
+.btn-ghost:hover { color: var(--text-1); background: rgba(15, 23, 42, 0.06); }
+.btn-danger { background: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.2); }
+.btn-danger:hover:not(:disabled) { background: var(--danger); color: white; }
+.btn-lg { padding: 16px 24px; font-size: 16px; min-height: 52px; border-radius: var(--radius-md); }
+.btn-block { width: 100%; }
+.btn-sm { padding: 8px 12px; font-size: 12px; min-height: 36px; }
+
+.input { width: 100%; padding: 14px 16px; background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border: 1px solid rgba(15, 23, 42, 0.1); border-radius: var(--radius-sm); color: var(--text-1); font-size: 16px; transition: all .25s var(--ease-out); min-height: 48px; }
+.input:focus { outline: none; border-color: var(--accent); background: rgba(255, 255, 255, 0.95); box-shadow: 0 0 0 4px var(--accent-glow); }
+.input::placeholder { color: var(--text-3); }
+label.field { display: block; margin-bottom: 14px; }
+label.field > span { display: block; margin-bottom: 6px; color: var(--text-2); font-size: 13px; font-weight: 500; }
+
+.avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; font-weight: 700; overflow: hidden; flex-shrink: 0; box-shadow: 0 4px 12px var(--accent-glow); }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.toast-container { position: fixed; top: calc(16px + var(--safe-top)); right: 16px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: calc(100vw - 32px); pointer-events: none; }
+.toast { background: var(--glass-bg-strong); backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%); border: 1px solid var(--glass-border); border-left: 3px solid var(--accent); border-radius: var(--radius-sm); padding: 14px 16px; min-width: 280px; box-shadow: var(--glass-shadow-lg); animation: slideInRight .35s var(--ease-spring); display: flex; gap: 10px; align-items: flex-start; pointer-events: auto; }
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--danger); }
+.toast.warning { border-left-color: var(--warning); }
+.toast .msg { font-size: 14px; color: var(--text-1); }
+.toast .title { font-weight: 600; margin-bottom: 2px; color: var(--text-1); }
+@keyframes slideInRight { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOutRight { to { transform: translateX(120%); opacity: 0; } }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: flex-end; justify-content: center; z-index: 1000; padding: 0; animation: fadeIn .25s ease; }
+.modal { background: var(--glass-bg-strong); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl) var(--radius-xl) 0 0; width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; padding: 24px 20px calc(24px + var(--safe-bottom)); animation: slideUp .35s var(--ease-spring); box-shadow: 0 -20px 60px rgba(15, 23, 42, 0.15); }
+.modal::before { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; background: rgba(15, 23, 42, 0.15); margin: 0 auto 18px; }
+@media (min-width: 768px) {
+  .modal-overlay { align-items: center; padding: 20px; }
+  .modal { border-radius: var(--radius-xl); }
+  .modal::before { display: none; }
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+.spinner-dark { border-color: rgba(15,23,42,0.2); border-top-color: var(--accent); }
+.spinner-lg { width: 36px; height: 36px; border-width: 3.5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.terminal { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; padding: calc(20px + var(--safe-top)) 24px calc(20px + var(--safe-bottom)); gap: 20px; }
+
+.terminal-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; max-width: 1200px; width: 100%; margin: 0 auto; }
+.terminal-header .logo { display: flex; align-items: center; gap: 12px; }
+.terminal-header .logo-mark { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; color: white; font-weight: 800; font-size: 16px; box-shadow: 0 6px 18px var(--accent-glow); }
+.terminal-header .gym-name { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+.terminal-header .gym-sub { color: var(--text-3); font-size: 12px; }
+.terminal-header .status-pill { display: flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-pill); background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border-soft); font-size: 13px; font-weight: 600; color: var(--text-1); }
+.terminal-header .status-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); animation: pulse 2s ease infinite; }
+.terminal-header .status-pill.offline .dot { background: var(--danger); box-shadow: 0 0 8px var(--danger); animation: none; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+.terminal-header .icon-btn { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--text-2); background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border-soft); transition: all .2s var(--ease-spring); }
+.terminal-header .icon-btn:active { transform: scale(0.92); color: var(--accent); }
+
+.terminal-main { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 1200px; width: 100%; margin: 0 auto; align-items: center; }
+
+/* QR CARD */
+.qr-card { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; text-align: center; box-shadow: var(--glass-shadow-lg); position: relative; overflow: hidden; }
+.qr-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.01em; }
+.qr-card .subtitle { color: var(--text-2); font-size: 14px; margin-bottom: 24px; }
+.qr-wrap { display: inline-block; padding: 18px; background: white; border-radius: var(--radius-md); box-shadow: 0 8px 32px var(--accent-glow), 0 0 0 1px rgba(15,23,42,0.05); transition: transform .35s var(--ease-spring), opacity .3s ease; }
+.qr-wrap.refreshing { opacity: .3; transform: scale(.95); }
+.qr-wrap canvas { display: block; max-width: 100%; height: auto; }
+.qr-timer { margin-top: 22px; font-size: 14px; color: var(--text-2); font-weight: 500; }
+.qr-timer .countdown { color: var(--text-1); font-weight: 800; font-variant-numeric: tabular-nums; font-size: 18px; }
+.qr-timer .countdown.urgent { color: var(--warning); }
+.qr-timer .countdown.critical { color: var(--danger); }
+.qr-progress { margin-top: 12px; height: 5px; background: rgba(15,23,42,0.08); border-radius: 3px; overflow: hidden; }
+.qr-progress .bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: 3px; transition: width .25s linear; box-shadow: 0 0 8px var(--accent-glow); }
+
+/* SCAN CARD */
+.scan-card { background: var(--glass-bg); backdrop-filter: blur(var(--glass-blur)) saturate(180%); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; min-height: 420px; display: flex; flex-direction: column; justify-content: center; box-shadow: var(--glass-shadow-lg); }
+.scan-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.01em; }
+.scan-card .subtitle { color: var(--text-2); font-size: 14px; margin-bottom: 24px; }
+
+.scan-step-phone { text-align: center; }
+.scan-step-phone .icon { width: 72px; height: 72px; margin: 0 auto 18px; border-radius: 22px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; color: white; box-shadow: 0 12px 28px var(--accent-glow); }
+.scan-step-phone p { color: var(--text-2); font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+.scan-step-phone .info-box { margin-top: 20px; padding: 14px; background: rgba(108, 99, 255, 0.06); border-radius: var(--radius-sm); font-size: 12px; color: var(--text-2); text-align: left; line-height: 1.7; }
+.scan-step-phone .info-box strong { color: var(--text-1); }
+
+.scan-step-success { text-align: center; animation: slideUp .4s var(--ease-spring); }
+.scan-step-success .check { width: 84px; height: 84px; margin: 0 auto 16px; border-radius: 50%; background: linear-gradient(135deg, #22C55E, #16A34A); display: grid; place-items: center; color: white; animation: popIn .4s cubic-bezier(.34, 1.56, .64, 1); box-shadow: 0 12px 28px rgba(34,197,94,0.3); }
+@keyframes popIn { from { transform: scale(0); } to { transform: scale(1); } }
+.scan-step-success .member-name { font-size: 26px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.02em; }
+.scan-step-success .member-status { margin-bottom: 20px; }
+.scan-step-success .member-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(255,255,255,0.5); border: 1px solid var(--glass-border-soft); border-radius: var(--radius-md); padding: 16px; margin-bottom: 20px; font-size: 14px; }
+.scan-step-success .member-info .label { color: var(--text-3); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; font-weight: 600; }
+.scan-step-success .member-info .val { font-weight: 700; color: var(--text-1); }
+
+.scan-step-error { text-align: center; animation: slideUp .3s ease; }
+.scan-step-error .x { width: 72px; height: 72px; margin: 0 auto 16px; border-radius: 50%; background: rgba(239,68,68,0.15); border: 3px solid var(--danger); display: grid; place-items: center; color: var(--danger); }
+.scan-step-error h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.scan-step-error p { color: var(--text-2); font-size: 14px; margin-bottom: 20px; }
+
+.terminal-footer { text-align: center; color: var(--text-3); font-size: 13px; }
+.terminal-footer .stats { display: inline-flex; gap: 24px; padding: 10px 18px; background: var(--glass-bg); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--glass-border-soft); border-radius: var(--radius-pill); }
+.terminal-footer .stats span { display: flex; align-items: center; gap: 6px; font-weight: 500; }
+.terminal-footer .stats .num { color: var(--text-1); font-weight: 700; }
+
+/* PIN LOCK */
+.pin-lock { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 20px; padding-top: calc(20px + var(--safe-top)); }
+.pin-card { background: var(--glass-bg-strong); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px; width: 100%; max-width: 380px; text-align: center; box-shadow: var(--glass-shadow-lg); }
+.pin-card h2 { font-size: 22px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.01em; }
+.pin-card p { color: var(--text-2); font-size: 14px; margin-bottom: 24px; }
+.pin-dots { display: flex; gap: 14px; justify-content: center; margin-bottom: 24px; }
+.pin-dots .dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid rgba(15,23,42,0.15); background: transparent; transition: all .2s var(--ease-spring); }
+.pin-dots .dot.filled { background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-color: transparent; transform: scale(1.1); box-shadow: 0 4px 10px var(--accent-glow); }
+.pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.pin-pad button { aspect-ratio: 1; border-radius: var(--radius-md); background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-border-soft); color: var(--text-1); font-size: 24px; font-weight: 700; transition: all .15s var(--ease-spring); }
+.pin-pad button:hover { background: rgba(255, 255, 255, 0.95); border-color: var(--accent); }
+.pin-pad button:active { transform: scale(0.92); background: var(--accent-glow); }
+.pin-pad .action { color: var(--text-2); font-size: 14px; font-weight: 600; }
+
+.staff-login { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 20px; padding-top: calc(20px + var(--safe-top)); padding-bottom: calc(20px + var(--safe-bottom)); }
+.staff-login-card { background: var(--glass-bg-strong); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 32px 28px; width: 100%; max-width: 400px; box-shadow: var(--glass-shadow-lg); animation: authIn .5s var(--ease-spring); }
+@keyframes authIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.staff-login-card .logo { width: 56px; height: 56px; border-radius: 18px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); display: grid; place-items: center; margin-bottom: 20px; box-shadow: 0 12px 28px var(--accent-glow); color: white; font-weight: 800; font-size: 22px; }
+.staff-login-card h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.staff-login-card .sub { color: var(--text-2); font-size: 14px; margin-top: 4px; margin-bottom: 24px; }
+
+.drawer-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 1000; animation: fadeIn .2s ease; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 100%; max-width: 420px; background: var(--glass-bg-strong); backdrop-filter: blur(40px) saturate(180%); -webkit-backdrop-filter: blur(40px) saturate(180%); border-left: 1px solid var(--glass-border); z-index: 1001; overflow-y: auto; animation: slideInLeft .3s var(--ease-spring); padding: 24px; padding-top: calc(24px + var(--safe-top)); padding-bottom: calc(24px + var(--safe-bottom)); }
+@keyframes slideInLeft { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+@media (max-width: 768px) {
+  .terminal-main { grid-template-columns: 1fr; gap: 16px; }
+  .terminal { padding: calc(14px + var(--safe-top)) 14px calc(14px + var(--safe-bottom)); gap: 14px; }
+  .qr-card, .scan-card { padding: 22px; }
+  .qr-wrap { padding: 12px; }
+  .qr-card h2, .scan-card h2 { font-size: 19px; }
+  .scan-card { min-height: 320px; }
+}
+@media (max-width: 480px) {
+  .terminal-header .gym-sub { display: none; }
+}
+
+.hidden { display: none !important; }
+.text-2 { color: var(--text-2); }
+.text-3 { color: var(--text-3); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-center { text-align: center; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.gap-1 { gap: 8px; } .gap-2 { gap: 16px; }
+.mt-1 { margin-top: 8px; } .mt-2 { margin-top: 16px; } .mt-3 { margin-top: 24px; }
+.mb-1 { margin-bottom: 8px; } .mb-2 { margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="toast-container" id="toasts"></div>
+
+<!-- ============================================================
+     STAFF LOGIN
+     ============================================================ -->
+<div class="staff-login hidden" id="staffLoginScreen">
+  <div class="staff-login-card">
+    <div class="logo">IC</div>
+    <h2>Terminal Login</h2>
+    <div class="sub">Sign in with a staff account to activate this terminal.</div>
+    <form id="staffLoginForm">
+      <label class="field">
+        <span>Email</span>
+        <input type="email" id="slEmail" class="input" style="font-size:14px;" placeholder="staff@gym.com" required />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input type="password" id="slPassword" class="input" style="font-size:14px;" placeholder="••••••••" required />
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="slSubmit">Activate terminal</button>
+    </form>
+    <p class="text-3 text-center mt-2" style="font-size:11px;">
+      The terminal stays signed in on this device. Sign out from settings.
+    </p>
+  </div>
+</div>
+
+<!-- ============================================================
+     PIN LOCK
+     ============================================================ -->
+<div class="pin-lock hidden" id="pinLockScreen">
+  <div class="pin-card">
+    <h2>Enter PIN</h2>
+    <p>4-digit PIN required to access terminal settings.</p>
+    <div class="pin-dots" id="pinDots">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div class="pin-pad" id="pinPad">
+      <button data-key="1">1</button>
+      <button data-key="2">2</button>
+      <button data-key="3">3</button>
+      <button data-key="4">4</button>
+      <button data-key="5">5</button>
+      <button data-key="6">6</button>
+      <button data-key="7">7</button>
+      <button data-key="8">8</button>
+      <button data-key="9">9</button>
+      <button class="action" data-key="clear">Clear</button>
+      <button data-key="0">0</button>
+      <button class="action" data-key="back">⌫</button>
+    </div>
+    <p class="text-3 mt-2" style="font-size:11px;">Default PIN: 1234 (change in settings)</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     TERMINAL UI
+     ============================================================ -->
+<div class="terminal hidden" id="terminalUI">
+
+  <header class="terminal-header">
+    <div class="logo">
+      <div class="logo-mark">IC</div>
+      <div>
+        <div class="gym-name" id="termGymName">IronCore Gym</div>
+        <div class="gym-sub">Attendance Terminal · <span id="termDeviceId">—</span></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-1">
+      <div class="status-pill" id="connStatus">
+        <span class="dot"></span>
+        <span class="label">Online</span>
+      </div>
+      <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="terminal-main">
+
+    <div class="qr-card">
+      <h2>Scan to Check In</h2>
+      <p class="subtitle">Open your phone camera or the member app, and scan this code.</p>
+      <div class="qr-wrap" id="qrWrap">
+        <canvas id="qrCanvas"></canvas>
+        <div class="text-center text-3 hidden" id="qrPlaceholder" style="padding:120px 80px;">Generating…</div>
+      </div>
+      <div class="qr-timer">
+        Refreshing in <span class="countdown" id="countdown">25</span>s
+      </div>
+      <div class="qr-progress">
+        <div class="bar" id="progressBar" style="width:100%;"></div>
+      </div>
+    </div>
+
+    <div class="scan-card" id="scanCard">
+      <div id="scanDefault" class="scan-step-phone">
+        <div class="icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        </div>
+        <h2 style="margin-bottom:10px;">Awaiting check-in…</h2>
+        <p>When a member scans the QR, they'll enter their phone on their device. The result appears here automatically.</p>
+        <div class="info-box">
+          <strong>How it works:</strong><br>
+          1. QR encodes a one-time token (expires in 30s)<br>
+          2. Member opens link → enters phone<br>
+          3. Server validates token + phone<br>
+          4. Check-in recorded — this screen updates
+        </div>
+      </div>
+
+      <div id="scanSuccess" class="scan-step-success hidden">
+        <div class="check">
+          <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>
+        </div>
+        <div class="avatar" id="successAvatar" style="width:72px;height:72px;font-size:24px;margin:0 auto 12px;"></div>
+        <div class="member-name" id="successName">—</div>
+        <div class="member-status" id="successStatus"></div>
+        <div class="member-info">
+          <div><div class="label">Plan</div><div class="val" id="successPlan">—</div></div>
+          <div><div class="label">Expires</div><div class="val" id="successExpiry">—</div></div>
+          <div><div class="label">Days left</div><div class="val" id="successDays">—</div></div>
+          <div><div class="label">Check-in</div><div class="val" id="successTime">—</div></div>
+        </div>
+        <p class="text-3" style="font-size:12px;">Returning to scan mode in <span id="resetCountdown">5</span>s…</p>
+      </div>
+
+      <div id="scanError" class="scan-step-error hidden">
+        <div class="x">
+          <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12"/></svg>
+        </div>
+        <h3 id="errorTitle">Check-in failed</h3>
+        <p id="errorMsg">—</p>
+        <button class="btn btn-secondary" id="retryBtn">Try again</button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="terminal-footer">
+    <div class="stats">
+      <span>Today: <span class="num" id="footToday">0</span></span>
+      <span>This terminal: <span class="num" id="footTerminal">0</span></span>
+      <span>Uptime: <span class="num" id="footUptime">0m</span></span>
+    </div>
+  </footer>
+</div>
+
+<!-- ============================================================
+     SETTINGS DRAWER
+     ============================================================ -->
+<div class="drawer-overlay hidden" id="settingsDrawerOverlay"></div>
+<aside class="drawer hidden" id="settingsDrawer" role="dialog">
+  <div class="flex items-center" style="justify-content:space-between;margin-bottom:24px;">
+    <h2 style="font-size:20px;font-weight:800;letter-spacing:-0.01em;">Terminal Settings</h2>
+    <button class="icon-btn" id="closeSettingsBtn" aria-label="Close" style="width:40px;height:40px;display:grid;place-items:center;color:var(--text-2);background:rgba(15,23,42,0.05);border-radius:10px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <label class="field">
+    <span>Device label (terminal_id)</span>
+    <input type="text" id="setDeviceLabel" class="input" style="font-size:14px;" />
+  </label>
+  <label class="field">
+    <span>Change PIN (4 digits)</span>
+    <input type="text" id="setPin" class="input" style="font-size:14px;" maxlength="4" pattern="\d{4}" placeholder="1234" />
+  </label>
+  <label class="field">
+    <span>QR refresh interval (seconds, 20-30)</span>
+    <input type="number" id="setRefresh" class="input" style="font-size:14px;" min="20" max="30" value="25" />
+  </label>
+  <div style="padding:14px;background:rgba(108,99,255,0.06);border-radius:12px;margin-bottom:16px;border:1px solid var(--glass-border-soft);">
+    <div class="text-3" style="font-size:11px;margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Signed in as</div>
+    <div style="font-weight:700;font-size:14px;" id="setStaffName">—</div>
+    <div class="text-2" style="font-size:12px;" id="setStaffEmail">—</div>
+  </div>
+  <button class="btn btn-primary btn-block mb-1" id="saveSettingsBtn">Save settings</button>
+  <button class="btn btn-secondary btn-block mb-1" id="testScanBtn">Simulate scan (test)</button>
+  <button class="btn btn-danger btn-block" id="signOutBtn">Sign out terminal</button>
+  <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--glass-border-soft);font-size:12px;color:var(--text-3);">
+    <div style="font-weight:700;color:var(--text-2);margin-bottom:8px;font-size:13px;">Security info</div>
+    <ul style="list-style:none;padding:0;line-height:1.9;">
+      <li>• Tokens expire in 30s</li>
+      <li>• One-time use (no replays)</li>
+      <li>• Locked to this device ID</li>
+      <li>• Server validates on insert</li>
+      <li>• All check-ins logged with IP</li>
+    </ul>
+  </div>
+</aside>
+
+<script>
+/* ============================================================
+   SUPABASE CONFIG
+   ============================================================ */
+const SUPABASE_URL = 'https://mthakfdhqdkbgnzlxyaw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im10aGFrZmRocWRrYmduemx4eWF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3NjUxMDQsImV4cCI6MjA5NzM0MTEwNH0.2TAlkYnKsDX5_UhjWBH_7hQIi8LTk9Aj7xTDluh1Rq0';
+const DEBUG = true;
+
+let sb = null;
+let currentStaff = null;
+let terminalId = null;
+let currentToken = null;
+let tokenExpiresAt = null;
+let refreshInterval = null;
+let countdownInterval = null;
+let resetInterval = null;
+let startTime = Date.now();
+let qrRefreshSeconds = 25;
+let pinEntry = '';
+let todayCheckins = 0;
+let terminalCheckins = 0;
+let realtimeChannel = null;
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const debug = (...a) => { if (DEBUG) console.log('[terminal]', ...a); };
+
+function normalizePhone(p) { return (p || '').replace(/[^0-9+]/g, ''); }
+function formatTime(d) { return new Date(d).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }); }
+function initials(name) { return (name || '?').split(/\s+/).slice(0,2).map(s => s[0]).join('').toUpperCase(); }
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function daysBetween(a, b) { return Math.ceil((new Date(b) - new Date(a)) / 86400000); }
+function isoDate(d) { return d.toISOString().slice(0, 10); }
+
+function setBtnLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) { btn._origHTML = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+  else { btn.disabled = false; if (btn._origHTML) btn.innerHTML = btn._origHTML; }
+}
+
+function toast(message, type = 'info', title = '') {
+  const container = $('#toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = {
+    success: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    error:   '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    warning: '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4a2 2 0 00-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"/></svg>',
+    info:    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+  };
+  el.innerHTML = `<span class="icon">${icons[type] || icons.info}</span><div>${title ? `<div class="title">${title}</div>` : ''}<div class="msg">${escapeHtml(message)}</div></div>`;
+  container.appendChild(el);
+  setTimeout(() => { el.style.animation = 'slideOutRight .3s ease forwards'; setTimeout(() => el.remove(), 300); }, 4000);
+}
+
+/* ============================================================
+   DEVICE FINGERPRINT
+   ============================================================ */
+function getDeviceFingerprint() {
+  let fp = localStorage.getItem('terminal_id');
+  if (!fp) {
+    const parts = [navigator.userAgent, navigator.language, screen.width + 'x' + screen.height, new Date().getTimezoneOffset(), Math.random().toString(36).slice(2, 10)];
+    fp = 'T-' + btoa(parts.join('|')).replace(/[^a-zA-Z0-9]/g, '').slice(0, 12);
+    localStorage.setItem('terminal_id', fp);
+  }
+  return fp;
+}
+function getStoredPin() { return localStorage.getItem('terminal_pin') || '1234'; }
+function setStoredPin(pin) { localStorage.setItem('terminal_pin', pin); }
+function getStoredLabel() { return localStorage.getItem('terminal_label') || terminalId; }
+function setStoredLabel(label) { localStorage.setItem('terminal_label', label); }
+
+/* ============================================================
+   AUTH
+   ============================================================ */
+async function initSupabase() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_ANON_KEY') {
+    toast('Please configure SUPABASE_URL and SUPABASE_ANON_KEY at the top of attendance.html', 'error', 'Configuration required');
+    return false;
+  }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  return true;
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session?.user) await onStaffAuthSuccess(session.user);
+  else showStaffLogin();
+}
+
+async function handleStaffLogin(e) {
+  e.preventDefault();
+  const btn = $('#slSubmit');
+  setBtnLoading(btn, true);
+  try {
+    const email = $('#slEmail').value.trim().toLowerCase();
+    const password = $('#slPassword').value;
+    if (!email || !password) throw new Error('Email and password required');
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    await onStaffAuthSuccess(data.user);
+    toast('Terminal activated', 'success');
+  } catch (err) {
+    toast(err.message || 'Sign-in failed', 'error');
+  } finally {
+    setBtnLoading(btn, false);
+  }
+}
+
+async function onStaffAuthSuccess(user) {
+  let { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+
+  // AUTO-CREATE PROFILE if missing
+  if (error || !profile) {
+    debug('Profile missing, auto-creating...');
+    try {
+      const newProfile = {
+        id: user.id,
+        name: user.user_metadata?.name || (user.email ? user.email.split('@')[0] : 'User'),
+        email: user.email || null,
+        phone: user.user_metadata?.phone || user.phone || null,
+        role: 'member',
+        is_active: true
+      };
+      const { data: created, error: createErr } = await sb.from('profiles').insert(newProfile).select().single();
+      if (createErr) throw createErr;
+      profile = created;
+    } catch (e) {
+      debug('Auto-create profile failed:', e);
+      toast('Could not create profile.', 'error');
+      await sb.auth.signOut();
+      showStaffLogin();
+      return;
+    }
+  }
+
+  if (!['admin','staff'].includes(profile.role)) {
+    toast('Staff account required for terminals', 'error', 'Access denied');
+    await sb.auth.signOut();
+    showStaffLogin();
+    return;
+  }
+  if (!profile.is_active) { toast('Account inactive', 'error'); await sb.auth.signOut(); showStaffLogin(); return; }
+  currentStaff = profile;
+  $('#setStaffName').textContent = profile.name || '—';
+  $('#setStaffEmail').textContent = profile.email || '—';
+  showTerminal();
+}
+
+function showStaffLogin() {
+  $('#staffLoginScreen').classList.remove('hidden');
+  $('#terminalUI').classList.add('hidden');
+  $('#pinLockScreen').classList.add('hidden');
+}
+function showTerminal() {
+  $('#staffLoginScreen').classList.add('hidden');
+  $('#terminalUI').classList.remove('hidden');
+  $('#pinLockScreen').classList.add('hidden');
+  $('#termDeviceId').textContent = getStoredLabel();
+  loadGymSettings();
+  startQrLoop();
+  startUptimeTicker();
+  setupRealtime();
+  loadTodayCount();
+}
+
+async function loadGymSettings() {
+  try {
+    const { data } = await sb.from('system_settings').select('gym_name').eq('id', 1).single();
+    if (data?.gym_name) $('#termGymName').textContent = data.gym_name;
+  } catch (e) { debug(e); }
+}
+
+async function loadTodayCount() {
+  try {
+    const today = isoDate(new Date());
+    const tomorrow = isoDate(new Date(Date.now() + 86400000));
+    const { count } = await sb.from('attendance').select('id', { count: 'exact', head: true }).gte('check_in_time', today).lt('check_in_time', tomorrow);
+    todayCheckins = count || 0;
+    $('#footToday').textContent = todayCheckins;
+    const { count: tcount } = await sb.from('attendance').select('id', { count: 'exact', head: true }).eq('terminal_id', terminalId);
+    terminalCheckins = tcount || 0;
+    $('#footTerminal').textContent = terminalCheckins;
+  } catch (e) { debug(e); }
+}
+
+/* ============================================================
+   QR TOKEN ROTATION
+   ============================================================ */
+async function generateNewToken() {
+  try {
+    const expiresAt = new Date(Date.now() + 30 * 1000).toISOString();
+    const { data, error } = await sb.from('qr_tokens').insert({
+      terminal_id: terminalId,
+      expires_at: expiresAt
+    }).select();
+    if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Failed to create token');
+    currentToken = data[0].id;
+    tokenExpiresAt = data[0].expires_at;
+    const payload = {
+      token: currentToken,
+      terminal: terminalId,
+      ts: Date.now(),
+      url: `${window.location.origin.replace(/\/$/, '')}/index.html?t=${currentToken}&tid=${encodeURIComponent(terminalId)}`
+    };
+    const payloadStr = JSON.stringify(payload);
+    debug('new token', payloadStr);
+    await renderQR(payloadStr);
+    startCountdown();
+  } catch (err) {
+    debug(err);
+    $('#qrPlaceholder').textContent = 'Connection error — retrying…';
+    $('#qrPlaceholder').classList.remove('hidden');
+    try { $('#qrCanvas').classList.add('hidden'); } catch (e) {}
+    setConnStatus(false);
+    setTimeout(generateNewToken, 3000);
+  }
+}
+
+async function renderQR(text) {
+  const canvas = $('#qrCanvas');
+  const placeholder = $('#qrPlaceholder');
+  const wrap = $('#qrWrap');
+  wrap.classList.add('refreshing');
+  await new Promise(r => setTimeout(r, 200));
+  return new Promise((resolve) => {
+    QRCode.toCanvas(canvas, text, {
+      width: 280, margin: 1,
+      color: { dark: '#0F172A', light: '#FFFFFF' },
+      errorCorrectionLevel: 'M'
+    }, (err) => {
+      if (err) {
+        placeholder.textContent = 'QR render error';
+        placeholder.classList.remove('hidden');
+        try { canvas.classList.add('hidden'); } catch (e) {}
+      } else {
+        try { canvas.classList.remove('hidden'); } catch (e) {}
+        placeholder.classList.add('hidden');
+        setConnStatus(true);
+      }
+      wrap.classList.remove('refreshing');
+      resolve();
+    });
+  });
+}
+
+function startQrLoop() {
+  stopQrLoop();
+  generateNewToken();
+  refreshInterval = setInterval(generateNewToken, qrRefreshSeconds * 1000);
+}
+function stopQrLoop() {
+  if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+}
+
+function startCountdown() {
+  if (countdownInterval) clearInterval(countdownInterval);
+  const startedAt = Date.now();
+  const totalMs = qrRefreshSeconds * 1000;
+  const update = () => {
+    const elapsed = Date.now() - startedAt;
+    const remaining = Math.max(0, Math.ceil((totalMs - elapsed) / 1000));
+    const cd = $('#countdown');
+    if (cd) {
+      cd.textContent = remaining;
+      cd.classList.remove('urgent', 'critical');
+      if (remaining <= 5) cd.classList.add('critical');
+      else if (remaining <= 10) cd.classList.add('urgent');
+    }
+    const bar = $('#progressBar');
+    if (bar) bar.style.width = ((totalMs - elapsed) / totalMs * 100) + '%';
+  };
+  update();
+  countdownInterval = setInterval(update, 250);
+}
+
+function setConnStatus(online) {
+  const pill = $('#connStatus');
+  if (!pill) return;
+  if (online) { pill.classList.remove('offline'); pill.querySelector('.label').textContent = 'Online'; }
+  else { pill.classList.add('offline'); pill.querySelector('.label').textContent = 'Offline'; }
+}
+
+/* ============================================================
+   REALTIME — listen for new attendance on this terminal
+   ============================================================ */
+function setupRealtime() {
+  if (realtimeChannel) return;
+  realtimeChannel = sb.channel('public:attendance')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance' },
+        payload => {
+          debug('realtime insert', payload);
+          const row = payload.new;
+          if (row.terminal_id !== terminalId) return;
+          handleAttendanceInsert(row);
+        })
+    .subscribe();
+}
+
+async function handleAttendanceInsert(attRow) {
+  try {
+    const { data: member } = await sb
+      .from('members')
+      .select(`id, membership_type, expiry_date, is_paid, profiles!inner(name, phone, avatar_url, email)`)
+      .eq('id', attRow.member_id)
+      .single();
+    if (!member) return;
+    showSuccess(member, attRow);
+    todayCheckins++;
+    terminalCheckins++;
+    $('#footToday').textContent = todayCheckins;
+    $('#footTerminal').textContent = terminalCheckins;
+    setTimeout(generateNewToken, 1000);
+  } catch (err) { debug(err); }
+}
+
+function showSuccess(member, attRow) {
+  $('#scanDefault').classList.add('hidden');
+  $('#scanError').classList.add('hidden');
+  $('#scanSuccess').classList.remove('hidden');
+  $('#successName').textContent = member.profiles?.name || 'Member';
+  if (member.profiles?.avatar_url) {
+    $('#successAvatar').innerHTML = `<img src="${member.profiles.avatar_url}" alt="" />`;
+  } else {
+    $('#successAvatar').textContent = initials(member.profiles?.name);
+  }
+  const today = new Date();
+  const expiry = new Date(member.expiry_date);
+  const days = daysBetween(today, expiry);
+  let badgeClass, badgeText;
+  if (expiry < today) { badgeClass = 'expired'; badgeText = 'Expired'; }
+  else if (days <= 7) { badgeClass = 'expiring'; badgeText = 'Expiring soon'; }
+  else { badgeClass = 'active'; badgeText = 'Active'; }
+  if (!member.is_paid) { badgeClass = 'unpaid'; badgeText = 'Unpaid — see front desk'; }
+  $('#successStatus').innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
+  const typeLabels = { monthly: 'Monthly', yearly: 'Yearly', '10_pass': '10-Pass' };
+  $('#successPlan').textContent = typeLabels[member.membership_type] || '—';
+  $('#successExpiry').textContent = new Date(member.expiry_date).toLocaleDateString();
+  $('#successDays').textContent = days >= 0 ? days : 0;
+  $('#successTime').textContent = formatTime(attRow.check_in_time);
+  let resetCount = 5;
+  $('#resetCountdown').textContent = resetCount;
+  if (resetInterval) clearInterval(resetInterval);
+  resetInterval = setInterval(() => {
+    resetCount--;
+    $('#resetCountdown').textContent = resetCount;
+    if (resetCount <= 0) { clearInterval(resetInterval); resetInterval = null; resetToDefault(); }
+  }, 1000);
+}
+
+function showError(title, msg) {
+  $('#scanDefault').classList.add('hidden');
+  $('#scanSuccess').classList.add('hidden');
+  $('#scanError').classList.remove('hidden');
+  $('#errorTitle').textContent = title || 'Check-in failed';
+  $('#errorMsg').textContent = msg || 'Please try again.';
+}
+function resetToDefault() {
+  $('#scanSuccess').classList.add('hidden');
+  $('#scanError').classList.add('hidden');
+  $('#scanDefault').classList.remove('hidden');
+}
+
+/* ============================================================
+   SIMULATE SCAN (test)
+   ============================================================ */
+async function simulateScan() {
+  if (!currentToken) { toast('No active token', 'warning'); return; }
+  const phone = window.prompt('Enter a member phone number to simulate a scan:');
+  if (!phone) return;
+  try {
+    const result = await callMarkAttendance(currentToken, normalizePhone(phone), null);
+    if (!result.ok) {
+      showError(result.error || 'Check-in failed', 'Please ask the member to scan again.');
+    } else {
+      const m = result.member;
+      $('#scanDefault').classList.add('hidden');
+      $('#scanError').classList.add('hidden');
+      $('#scanSuccess').classList.remove('hidden');
+      $('#successName').textContent = m.name;
+      if (m.avatar_url) $('#successAvatar').innerHTML = `<img src="${m.avatar_url}" alt="" />`;
+      else $('#successAvatar').textContent = initials(m.name);
+      const typeLabels = { monthly: 'Monthly', yearly: 'Yearly', '10_pass': '10-Pass' };
+      $('#successStatus').innerHTML = `<span class="badge ${m.status === 'active' ? 'active' : m.status === 'expiring' ? 'expiring' : 'expired'}">${m.status}</span>`;
+      $('#successPlan').textContent = typeLabels[m.membership_type] || '—';
+      $('#successExpiry').textContent = new Date(m.expiry_date).toLocaleDateString();
+      $('#successDays').textContent = m.days_remaining;
+      $('#successTime').textContent = formatTime(new Date());
+      todayCheckins++; terminalCheckins++;
+      $('#footToday').textContent = todayCheckins;
+      $('#footTerminal').textContent = terminalCheckins;
+      let resetCount = 5;
+      $('#resetCountdown').textContent = resetCount;
+      if (resetInterval) clearInterval(resetInterval);
+      resetInterval = setInterval(() => {
+        resetCount--;
+        $('#resetCountdown').textContent = resetCount;
+        if (resetCount <= 0) { clearInterval(resetInterval); resetInterval = null; resetToDefault(); }
+      }, 1000);
+      setTimeout(generateNewToken, 1000);
+    }
+  } catch (err) {
+    showError('Network error', err.message);
+  }
+}
+
+/* ============================================================
+   MARK ATTENDANCE RPC
+   ============================================================ */
+async function callMarkAttendance(token, phone, photoUrl) {
+  const { data, error } = await sb.rpc('mark_attendance_by_phone', {
+    p_qr_token: token,
+    p_terminal_id: terminalId,
+    p_phone: phone,
+    p_photo_url: photoUrl
+  });
+  if (error) {
+    debug('rpc error', error);
+    return { ok: false, error: error.message };
+  }
+  return data || { ok: false, error: 'No response from server' };
+}
+window.__callMarkAttendance = callMarkAttendance;
+window.__getTerminalId = () => terminalId;
+window.__getCurrentToken = () => currentToken;
+
+/* ============================================================
+   PIN LOCK
+   ============================================================ */
+function showPinLock() {
+  pinEntry = '';
+  updatePinDots();
+  $('#pinLockScreen').classList.remove('hidden');
+}
+function hidePinLock() { $('#pinLockScreen').classList.add('hidden'); }
+function updatePinDots() {
+  $$('#pinDots .dot').forEach((d, i) => d.classList.toggle('filled', i < pinEntry.length));
+}
+function handlePinKey(key) {
+  if (key === 'clear') { pinEntry = ''; }
+  else if (key === 'back') { pinEntry = pinEntry.slice(0, -1); }
+  else if (/^\d$/.test(key) && pinEntry.length < 4) {
+    pinEntry += key;
+    if (pinEntry.length === 4) {
+      setTimeout(() => {
+        if (pinEntry === getStoredPin()) { hidePinLock(); openSettings(); }
+        else { toast('Incorrect PIN', 'error'); pinEntry = ''; }
+        updatePinDots();
+      }, 150);
+    }
+  }
+  updatePinDots();
+}
+
+/* ============================================================
+   SETTINGS DRAWER
+   ============================================================ */
+function openSettings() {
+  $('#setDeviceLabel').value = getStoredLabel();
+  $('#setPin').value = getStoredPin();
+  $('#setRefresh').value = qrRefreshSeconds;
+  $('#settingsDrawer').classList.remove('hidden');
+  $('#settingsDrawerOverlay').classList.remove('hidden');
+}
+function closeSettings() {
+  $('#settingsDrawer').classList.add('hidden');
+  $('#settingsDrawerOverlay').classList.add('hidden');
+}
+function saveSettings() {
+  const label = $('#setDeviceLabel').value.trim() || terminalId;
+  const pin = $('#setPin').value.trim();
+  const refresh = parseInt($('#setRefresh').value, 10);
+  setStoredLabel(label);
+  if (pin && /^\d{4}$/.test(pin)) setStoredPin(pin);
+  if (refresh >= 20 && refresh <= 30) qrRefreshSeconds = refresh;
+  $('#termDeviceId').textContent = label;
+  closeSettings();
+  toast('Settings saved', 'success');
+  startQrLoop();
+}
+
+async function signOutTerminal() {
+  if (!confirm('Sign out this terminal? You\'ll need to log in again to reactivate.')) return;
+  stopQrLoop();
+  if (realtimeChannel) { try { sb.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
+  await sb.auth.signOut();
+  currentStaff = null;
+  showStaffLogin();
+  toast('Terminal signed out', 'info');
+}
+
+/* ============================================================
+   UPTIME TICKER
+   ============================================================ */
+function startUptimeTicker() {
+  setInterval(() => {
+    const mins = Math.floor((Date.now() - startTime) / 60000);
+    const hrs = Math.floor(mins / 60);
+    const remMin = mins % 60;
+    const el = $('#footUptime');
+    if (el) el.textContent = hrs > 0 ? `${hrs}h ${remMin}m` : `${mins}m`;
+  }, 30000);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init() {
+  terminalId = getDeviceFingerprint();
+
+  $('#staffLoginForm').addEventListener('submit', handleStaffLogin);
+
+  $('#settingsBtn').addEventListener('click', showPinLock);
+  $('#closeSettingsBtn').addEventListener('click', closeSettings);
+  $('#settingsDrawerOverlay').addEventListener('click', closeSettings);
+  $('#saveSettingsBtn').addEventListener('click', saveSettings);
+  $('#testScanBtn').addEventListener('click', simulateScan);
+  $('#signOutBtn').addEventListener('click', signOutTerminal);
+
+  $$('#pinPad button').forEach(b => b.addEventListener('click', () => handlePinKey(b.dataset.key)));
+  $('#retryBtn').addEventListener('click', resetToDefault);
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeSettings(); hidePinLock(); }
+  });
+
+  // Kiosk mode helpers
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
+  const ok = await initSupabase();
+  if (!ok) return;
+  await checkSession();
+
+  sb.auth.onAuthStateChange((event) => {
+    debug('auth event', event);
+    if (event === 'SIGNED_OUT') {
+      stopQrLoop();
+      currentStaff = null;
+      showStaffLogin();
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
